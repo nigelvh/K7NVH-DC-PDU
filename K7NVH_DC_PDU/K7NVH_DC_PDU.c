@@ -164,6 +164,11 @@ int main(void) {
 					INPUT_Clear();
 					break;
 
+				case 3:
+					// Ctrl-c bail out on partial command
+					INPUT_Clear();
+					break;
+
 				default:
 					// Normal char buffering
 					if (DATA_IN_POS < 31) {
