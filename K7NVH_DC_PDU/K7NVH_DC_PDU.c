@@ -1,11 +1,6 @@
 /* (c) 2014 Nigel Vander Houwen */
-/*
-Program:   10158 bytes (62.0% Full)
-(.text + .data + .bootloader)
 
-Data:        347 bytes (67.8% Full)
-(.data + .bss + .noinit)
-*/
+// TO-DO
 // Save PCYCLE delay to EEPROM
 // Implement PCYCLE
 // Finish VSETREF implementation
@@ -30,7 +25,7 @@ float REF_V;
 uint8_t PORT8_SENSE; // 0 = Current, 1 = Voltage
 
 // ADC Variables
-uint8_t ADC_Ports[8] = {0b10010000, 0b10000000, 0b10110000, 0b10100000, 0b11010000, 0b11000000, 0b11110000, 0b11100000};
+const uint8_t ADC_Ports[8] = {0b10010000, 0b10000000, 0b10110000, 0b10100000, 0b11010000, 0b11000000, 0b11110000, 0b11100000};
 float STEP_V = 0; // Will be set at startup.
 
 // State Variables
