@@ -137,6 +137,11 @@ int main(void) {
 
 	INPUT_Clear();
 
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// ~~ Main system loop
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 	for(;;) {
 		BYTE_IN = CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface);
 
