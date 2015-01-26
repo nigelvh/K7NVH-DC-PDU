@@ -3,16 +3,6 @@
 #define _K7NVH_DC_PDU_H_
 
 
-// M     M     A       CCC    RRRR       OOO      SSS  
-// MM   MM    A A     CC CC   R   RR    O   O   SS   SS
-// M M M M   A   A   CC    C  R    RR  O     O  S      
-// M  M  M  A     A  C        R   RR   O     O  SS     
-// M     M  AAAAAAA  C        RRRR     O     O    SSS  
-// M     M  A     A  C        R RR     O     O       SS
-// M     M  A     A  CC    C  R   R    O     O        S
-// M     M  A     A   CC CC   R    R    O   O   SS   SS
-// M     M  A     A    CCC    R     R    OOO      SSS  
-
 #define SOFTWAREVERS "\r\nK7NVH DC PDU V1.0\r\n"
 #define PORT_CNT    8
 #define DATA_BUFF_LEN    32
@@ -34,7 +24,6 @@
 #define SPI_MODE_MASK 0x0C  // CPOL = bit 3, CPHA = bit 2 on SPCR
 #define SPI_CLOCK_MASK 0x03  // SPR1 = bit 1, SPR0 = bit 0 on SPCR
 #define SPI_2XCLOCK_MASK 0x01  // SPI2X = bit 0 on SPSR
-
 
 // SPI pins
 #define SPI_SS PB0
@@ -70,16 +59,6 @@
 #define EEPROM_OFFSET_P6NAME 160 // 16 bytes at offset 160
 #define EEPROM_OFFSET_P7NAME 176 // 16 bytes at offset 176
 
-
-//   GGGGG  L          OOO    BBBBB       A     L          SSS  
-//  GG      L         O   O   B   BB     A A    L        SS   SS
-// GG       L        O     O  B    BB   A   A   L        S      
-// G        L        O     O  B   BB   A     A  L        SS     
-// G        L        O     O  BBBBB    AAAAAAA  L          SSS  
-// G  GGGG  L        O     O  B   BB   A     A  L             SS
-// GG    G  L        O     O  B    BB  A     A  L              S
-//  GG  GG  L         O   O   B   BB   A     A  L        SS   SS
-//   GGGG   LLLLLLL    OOO    BBBBB    A     A  LLLLLLL    SSS  
 
 // Standard file stream for the CDC interface when set up, so that the
 // virtual CDC COM port can be used like any regular character stream
@@ -136,15 +115,6 @@ USB_ClassInfo_CDC_Device_t VirtualSerial_CDC_Interface = {
 	},
 };
 
-// PPPP     RRRR       OOO    TTTTTTT    OOO    TTTTTTT  Y     Y  PPPP   
-// P   PP   R   RR    O   O      T      O   O      T      Y   Y   P   PP 
-// P    PP  R    RR  O     O     T     O     O     T       Y Y    P    PP
-// P   PP   R   RR   O     O     T     O     O     T        Y     P   PP 
-// PPPP     RRRR     O     O     T     O     O     T        Y     PPPP   
-// P        R RR     O     O     T     O     O     T        Y     P      
-// P        R   R    O     O     T     O     O     T        Y     P      
-// P        R    R    O   O      T      O   O      T        Y     P      
-// P        R     R    OOO       T       OOO       T        Y     P      
 
 static inline void run_lufa(void);
 
