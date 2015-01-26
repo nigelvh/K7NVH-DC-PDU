@@ -30,7 +30,7 @@ float REF_V;
 uint8_t PORT8_SENSE; // 0 = Current, 1 = Voltage
 
 // Port to ADC Address look up table
-const uint8_t ADC_Ports[PORTCNT] = \
+const uint8_t ADC_Ports[PORT_CNT] = \
 		{0b10010000, 0b10000000, 0b10110000, 0b10100000, \
 		 0b11010000, 0b11000000, 0b11110000, 0b11100000};
 float STEP_V = 0; // Will be set at startup.
@@ -41,8 +41,8 @@ char DATA_IN[DATA_BUFF_LEN];
 uint8_t DATA_IN_POS = 0;
 
 /** LUFA CDC Class driver interface configuration and state information.
- * This structure is passed to all CDC Class driver functions, so that 
- * multiple instances of the same class within a device can be 
+ * This structure is passed to all CDC Class driver functions, so that
+ * multiple instances of the same class within a device can be
  * differentiated from one another.
  */ 
 USB_ClassInfo_CDC_Device_t VirtualSerial_CDC_Interface = {
@@ -77,7 +77,7 @@ int main(void) {
 	STEP_V = REF_V / 1024;
 	int16_t BYTE_IN = -1;
 
-	for(uint8_t i = 0; i < DATA_BUF_LEN; i++) {
+	for(uint8_t i = 0; i < DATA_BUFF_LEN; i++) {
 		DATA_IN[i] = 0;
 	}
 
@@ -85,10 +85,11 @@ int main(void) {
 	MCUSR &= ~(1 << WDRF);
 	wdt_disable();
 
+	// Divide 16MHz crystal down to 1MHz for CPU clock.
 	clock_prescale_set(clock_div_16);
 
-	// Create a regular character stream for the USB interface 
-	// so that it can be used with the stdio.h functions
+	// Init USB hardware and create a regular character stream for the
+	// USB interface so that it can be used with the stdio.h functions
 	USB_Init();
 	CDC_Device_CreateStream(&VirtualSerial_CDC_Interface, &USBSerialStream);
 
