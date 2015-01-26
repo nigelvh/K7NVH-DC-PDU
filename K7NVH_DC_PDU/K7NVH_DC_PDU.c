@@ -10,61 +10,22 @@
 // High water mark stored in EEPROM (Lifetime & User resettable)
 // Document available commands
 
+#include <avr/io.h>
+#include <avr/wdt.h>
+#include <avr/power.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
+#include <string.h>
+#include <stdio.h>
+#include <avr/pgmspace.h>
+#include <avr/eeprom.h>
+
+#include <LUFA/Drivers/USB/USB.h>
+#include <LUFA/Platform/Platform.h>
+
+#include "Descriptors.h"
 #include "K7NVH_DC_PDU.h"
 
-#define SOFTWAREVERS "\r\nK7NVH DC PDU V1.0\r\n"
-#define PORT_CNT	8
-#define DATA_BUFF_LEN	32
-
-// Reused strings
-const char STR_NR_Port[] PROGMEM = "\r\nPORT ";
-const char STR_Enabled[] PROGMEM = "ENABLED";
-const char STR_Disabled[] PROGMEM = "DISABLED";
-const char STR_Port_Init[] PROGMEM = "PORT INIT:\r\n";
-const char STR_Port_Default[] PROGMEM = "\r\nPORT DEFAULT ";
-const char STR_Port_8_Sense[] PROGMEM = "\r\nPORT 8 SENSE ";
-
-// Variables stored in EEPROM
-uint8_t PORT_DEF[PORT_CNT]; // Default state for the ports
-float REF_V;
-uint8_t PORT8_SENSE; // 0 = Current, 1 = Voltage
-
-// Port to ADC Address look up table
-const uint8_t ADC_Ports[PORT_CNT] = \
-		{0b10010000, 0b10000000, 0b10110000, 0b10100000, \
-		 0b11010000, 0b11000000, 0b11110000, 0b11100000};
-float STEP_V = 0; // Will be set at startup.
-
-// State Variables
-uint8_t PORT_STATE[PORT_CNT];
-char DATA_IN[DATA_BUFF_LEN];
-uint8_t DATA_IN_POS = 0;
-
-/** LUFA CDC Class driver interface configuration and state information.
- * This structure is passed to all CDC Class driver functions, so that
- * multiple instances of the same class within a device can be
- * differentiated from one another.
- */ 
-USB_ClassInfo_CDC_Device_t VirtualSerial_CDC_Interface = {
-	.Config = {
-		.ControlInterfaceNumber   = INTERFACE_ID_CDC_CCI,
-		.DataINEndpoint           = {
-			.Address          = CDC_TX_EPADDR,
-			.Size             = CDC_TXRX_EPSIZE,
-			.Banks            = 1,
-		},
-		.DataOUTEndpoint = {
-			.Address          = CDC_RX_EPADDR,
-			.Size             = CDC_TXRX_EPSIZE,
-			.Banks            = 1,
-		},
-		.NotificationEndpoint = {
-			.Address          = CDC_NOTIFICATION_EPADDR,
-			.Size             = CDC_NOTIFICATION_EPSIZE,
-			.Banks            = 1,
-		},
-	},
-};
 
 // Main program entry point.
 int main(void) {
