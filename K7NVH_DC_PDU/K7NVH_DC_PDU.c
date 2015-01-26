@@ -1,6 +1,6 @@
 /* (c) 2014 Nigel Vander Houwen */
-
-// TO-DO
+//
+// TODO
 // Save PCYCLE delay to EEPROM
 // Implement PCYCLE
 // Finish VSETREF implementation
@@ -38,9 +38,10 @@ uint8_t PORT_STATE[8];
 char DATA_IN[32];
 uint8_t DATA_IN_POS = 0;
 
-/** LUFA CDC Class driver interface configuration and state information. This structure is
- *  passed to all CDC Class driver functions, so that multiple instances of the same class
- *  within a device can be differentiated from one another.
+/** LUFA CDC Class driver interface configuration and state information.
+ * This structure is passed to all CDC Class driver functions, so that 
+ * multiple instances of the same class within a device can be 
+ * differentiated from one another.
  */ 
 USB_ClassInfo_CDC_Device_t VirtualSerial_CDC_Interface = {
 	.Config = {
