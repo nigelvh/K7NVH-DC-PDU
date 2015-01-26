@@ -8,6 +8,7 @@
 // HIGH current safety shutoff
 // Save current limit value/port to EEPROM
 // High water mark stored in EEPROM (Lifetime & User resettable)
+// Document available commands
 
 #include "K7NVH_DC_PDU.h"
 
