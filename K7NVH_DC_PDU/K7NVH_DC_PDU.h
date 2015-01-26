@@ -2,6 +2,21 @@
 #ifndef _K7NVH_DC_PDU_H_
 #define _K7NVH_DC_PDU_H_
 
+#include <avr/io.h>
+#include <avr/wdt.h>
+#include <avr/power.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
+#include <string.h>
+#include <stdio.h>
+#include <avr/pgmspace.h>
+#include <avr/eeprom.h>
+
+#include <LUFA/Drivers/USB/USB.h>
+#include <LUFA/Platform/Platform.h>
+
+#include "Descriptors.h"
+
 
 #define SOFTWAREVERS "\r\nK7NVH DC PDU V1.0\r\n"
 #define PORT_CNT    8

@@ -10,20 +10,6 @@
 // High water mark stored in EEPROM (Lifetime & User resettable)
 // Document available commands
 
-#include <avr/io.h>
-#include <avr/wdt.h>
-#include <avr/power.h>
-#include <avr/interrupt.h>
-#include <util/delay.h>
-#include <string.h>
-#include <stdio.h>
-#include <avr/pgmspace.h>
-#include <avr/eeprom.h>
-
-#include <LUFA/Drivers/USB/USB.h>
-#include <LUFA/Platform/Platform.h>
-
-#include "Descriptors.h"
 #include "K7NVH_DC_PDU.h"
 
 
