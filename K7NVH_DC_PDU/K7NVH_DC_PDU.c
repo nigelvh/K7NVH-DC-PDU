@@ -1,4 +1,4 @@
-/* (c) 2014 Nigel Vander Houwen */
+/* (c) 2015 Nigel Vander Houwen */
 //
 // TODO
 // Save PCYCLE delay to EEPROM
