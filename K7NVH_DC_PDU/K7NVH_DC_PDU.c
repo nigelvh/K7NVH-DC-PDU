@@ -1,6 +1,6 @@
 /* (c) 2014 Nigel Vander Houwen */
-
-// TO-DO
+//
+// TODO
 // Save PCYCLE delay to EEPROM
 // Implement PCYCLE
 // Finish VSETREF implementation
@@ -13,6 +13,8 @@
 #include "K7NVH_DC_PDU.h"
 
 #define SOFTWAREVERS "\r\nK7NVH DC PDU V1.0\r\n"
+#define PORT_CNT	8
+#define DATA_BUFF_LEN	32
 
 // Reused strings
 const char STR_NR_Port[] PROGMEM = "\r\nPORT ";
@@ -23,24 +25,25 @@ const char STR_Port_Default[] PROGMEM = "\r\nPORT DEFAULT ";
 const char STR_Port_8_Sense[] PROGMEM = "\r\nPORT 8 SENSE ";
 
 // Variables stored in EEPROM
-uint8_t PORT_DEF[8]; // Default state for the ports
+uint8_t PORT_DEF[PORT_CNT]; // Default state for the ports
 float REF_V;
 uint8_t PORT8_SENSE; // 0 = Current, 1 = Voltage
 
 // Port to ADC Address look up table
-const uint8_t ADC_Ports[8] = \
+const uint8_t ADC_Ports[PORT_CNT] = \
 		{0b10010000, 0b10000000, 0b10110000, 0b10100000, \
 		 0b11010000, 0b11000000, 0b11110000, 0b11100000};
 float STEP_V = 0; // Will be set at startup.
 
 // State Variables
-uint8_t PORT_STATE[8];
-char DATA_IN[32];
+uint8_t PORT_STATE[PORT_CNT];
+char DATA_IN[DATA_BUFF_LEN];
 uint8_t DATA_IN_POS = 0;
 
-/** LUFA CDC Class driver interface configuration and state information. This structure is
- *  passed to all CDC Class driver functions, so that multiple instances of the same class
- *  within a device can be differentiated from one another.
+/** LUFA CDC Class driver interface configuration and state information.
+ * This structure is passed to all CDC Class driver functions, so that
+ * multiple instances of the same class within a device can be
+ * differentiated from one another.
  */ 
 USB_ClassInfo_CDC_Device_t VirtualSerial_CDC_Interface = {
 	.Config = {
@@ -74,7 +77,7 @@ int main(void) {
 	STEP_V = REF_V / 1024;
 	int16_t BYTE_IN = -1;
 
-	for(uint8_t i = 0; i < 32; i++) {
+	for(uint8_t i = 0; i < DATA_BUFF_LEN; i++) {
 		DATA_IN[i] = 0;
 	}
 
@@ -82,14 +85,12 @@ int main(void) {
 	MCUSR &= ~(1 << WDRF);
 	wdt_disable();
 
-	// Disable clock division
+	// Divide 16MHz crystal down to 1MHz for CPU clock.
 	clock_prescale_set(clock_div_16);
 
-	// USB Hardware Initialization
+	// Init USB hardware and create a regular character stream for the
+	// USB interface so that it can be used with the stdio.h functions
 	USB_Init();
-
-	// Create a regular character stream for the interface 
-	// so that it can be used with the stdio.h functions
 	CDC_Device_CreateStream(&VirtualSerial_CDC_Interface, &USBSerialStream);
 
 	// Enable interrupts
@@ -123,7 +124,7 @@ int main(void) {
 
 	// Enable/Disable ports per their defaults
 	printPGMStr(STR_Port_Init);
-	for(uint8_t i = 0; i < 8; i++) {
+	for(uint8_t i = 0; i < PORT_CNT; i++) {
 		PORT_CTL(i, PORT_DEF[i]);
 		fprintf(&USBSerialStream, "P%i", i+1);
 		if (PORT_DEF[i]) {
@@ -135,6 +136,11 @@ int main(void) {
 	}
 
 	INPUT_Clear();
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// ~~ Main system loop
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	for(;;) {
 		BYTE_IN = CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface);
@@ -155,6 +161,11 @@ int main(void) {
 				case '\r':
 					// Newline, Parse our command
 					INPUT_Parse();
+					INPUT_Clear();
+					break;
+
+				case 3:
+					// Ctrl-c bail out on partial command
 					INPUT_Clear();
 					break;
 
@@ -182,7 +193,7 @@ int main(void) {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 static inline void INPUT_Clear(void) {
-	for (uint8_t i = 0; i < 32; i++) {
+	for (uint8_t i = 0; i < DATA_BUFF_LEN; i++) {
 		DATA_IN[i] = 0;
 	}
 	DATA_IN_POS = 0;
@@ -199,13 +210,15 @@ static inline void INPUT_Parse(void) {
 		return;
 	}
 	if (strncmp_P(DATA_IN, PSTR("PON"), 3) == 0) {
-		if (DATA_IN[3] >= 49 && DATA_IN[3] <= 56) {
-			PORT_CTL(DATA_IN[3]-48-1, 1);
+		if (DATA_IN[3] >= '1' && DATA_IN[3] <= '8') {
+			// Parse argument for specific port
+			PORT_CTL(DATA_IN[3]-'1', 1);
 			printPGMStr(STR_NR_Port);
 			printPGMStr(STR_Enabled);
 			return;
 		} else if (DATA_IN[3] == 'A') {
-			for (uint8_t i = 0; i < 8; i++) {
+			// Set all ports on
+			for (uint8_t i = 0; i < PORT_CNT; i++) {
 				PORT_CTL(i, 1);
 				printPGMStr(STR_NR_Port);
 				fprintf(&USBSerialStream, "%i ", i);
@@ -215,13 +228,15 @@ static inline void INPUT_Parse(void) {
 		}
 	}
 	if (strncmp_P(DATA_IN, PSTR("POFF"), 4) == 0) {
-		if (DATA_IN[4] >= 49 && DATA_IN[4] <= 56) {
-			PORT_CTL(DATA_IN[4]-48-1, 0);
+		if (DATA_IN[4] >= '1' && DATA_IN[4] <= '8') {
+			// Parse argument for specific port
+			PORT_CTL(DATA_IN[4]-'1', 0);
 			printPGMStr(STR_NR_Port);
 			printPGMStr(STR_Disabled);
 			return;
 		} else if (DATA_IN[4] == 'A') {
-			for(uint8_t i = 0; i < 8; i++) {
+			// Set all ports off
+			for(uint8_t i = 0; i < PORT_CNT; i++) {
 				PORT_CTL(i, 0);
 				printPGMStr(STR_NR_Port);
 				fprintf(&USBSerialStream, "%i ", i);
@@ -231,14 +246,17 @@ static inline void INPUT_Parse(void) {
 		}
 	}
 	if (strncmp_P(DATA_IN, PSTR("PDEFON"), 6) == 0) {
-		if (DATA_IN[6] >= 49 && DATA_IN[6] <= 56) {
-			PORT_DEF[DATA_IN[6]-48-1] = 1;
+		// Set the default state to ON
+		if (DATA_IN[6] >= '1' && DATA_IN[6] <= '8') {
+			// Parse argument for specific port
+			PORT_DEF[DATA_IN[6]-'1'] = 1;
 			EEPROM_Write_Port_Defaults();
 			printPGMStr(STR_Port_Default);
 			printPGMStr(STR_Enabled);
 			return;
 		} else if (DATA_IN[6] == 'A') {
-			for (uint8_t i = 0; i < 8; i++) {
+			// Perform for all ports
+			for (uint8_t i = 0; i < PORT_CNT; i++) {
 				PORT_DEF[i] = 1;
 				printPGMStr(STR_Port_Default);
 				fprintf(&USBSerialStream, "%i ", i);
@@ -249,14 +267,17 @@ static inline void INPUT_Parse(void) {
 		}
 	}
 	if (strncmp_P(DATA_IN, PSTR("PDEFOFF"), 7) == 0) {
-		if (DATA_IN[7] >= 49 && DATA_IN[7] <= 56) {
-			PORT_DEF[DATA_IN[7]-48-1] = 0;
+		// Set the default state to OFF
+		if (DATA_IN[7] >= '1' && DATA_IN[7] <= '8') {
+			// Parse argument for specific port
+			PORT_DEF[DATA_IN[7]-'1'] = 0;
 			EEPROM_Write_Port_Defaults();
 			printPGMStr(STR_Port_Default);
 			printPGMStr(STR_Disabled);
 			return;
 		} else if (DATA_IN[7] == 'A') {
-			for(uint8_t i = 0; i < 8; i++) {
+			// Perform for all ports
+			for(uint8_t i = 0; i < PORT_CNT; i++) {
 				PORT_DEF[i] = 0;
 				printPGMStr(STR_Port_Default);
 				fprintf(&USBSerialStream, "%i ", i);
@@ -302,7 +323,7 @@ static inline void PRINT_Status(void) {
 		printPGMStr(PSTR("\r\nInput Voltage: "));
 		fprintf(&USBSerialStream, "%.2fV", voltage);
 	}
-	for(uint8_t i = 0; i < 8; i++) {
+	for(uint8_t i = 0; i < PORT_CNT; i++) {
 		printPGMStr(STR_NR_Port);
 		fprintf(&USBSerialStream, "%i \"%s\": ", i+1, EEPROM_Read_Port_Name(i));
 		if (PORT_STATE[i] == 1) { printPGMStr(PSTR("ON")); } else { printPGMStr(PSTR("OFF")); }
@@ -375,7 +396,7 @@ static inline void LED_CTL(uint8_t led, uint8_t state) {
 
 // Read the default port state settings into the PORT_DEF array in RAM
 static inline void EEPROM_Read_Port_Defaults(void) {
-	for(uint8_t i = 0; i < 8; i++) {
+	for(uint8_t i = 0; i < PORT_CNT; i++) {
 		// Update the PORT_DEF array with the values from EEPROM
 		PORT_DEF[i] = eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_PORT_DEFAULTS + i));
 		// If the value is not 0 or 1 (uninitialized), default it to 1
@@ -385,7 +406,7 @@ static inline void EEPROM_Read_Port_Defaults(void) {
 
 // Write the default port state settings from the PORT_DEF array in RAM
 static inline void EEPROM_Write_Port_Defaults(void) {
-	for(uint8_t i = 0; i < 8; i++) {
+	for(uint8_t i = 0; i < PORT_CNT; i++) {
 		// Update the EERPOM with the values from the PORT_DEF array
 		eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_PORT_DEFAULTS + i), PORT_DEF[i]);
 	}
@@ -428,7 +449,7 @@ static inline const char * EEPROM_Read_Port_Name(uint8_t port) {
 static inline void EEPROM_Dump_Vars(void) {
 	// Read port defaults
 	printPGMStr(PSTR("\r\nPORT DEF: "));
-	for(uint8_t i = 0; i < 8; i++) {
+	for(uint8_t i = 0; i < PORT_CNT; i++) {
 		fprintf(&USBSerialStream, "%i ", eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_PORT_DEFAULTS + i)));
 	}
 	// Read REF_V
@@ -439,7 +460,7 @@ static inline void EEPROM_Dump_Vars(void) {
 	fprintf(&USBSerialStream, "%i", eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_P8_SENSE)));
 	// Read Port Names
 	printPGMStr(PSTR("\r\nPNAMES: "));
-	for(uint8_t i = 0; i < 8; i++) {
+	for(uint8_t i = 0; i < PORT_CNT; i++) {
 		char working[16];
 		eeprom_read_block((void*)working, (const void*)EEPROM_OFFSET_P0NAME+(i*16), 16);
 		fprintf(&USBSerialStream, "%s ", working);
@@ -564,3 +585,4 @@ void EVENT_USB_Device_ConfigurationChanged(void) {
 void EVENT_USB_Device_ControlRequest(void) {
 	CDC_Device_ProcessControlRequest(&VirtualSerial_CDC_Interface);
 }
+
