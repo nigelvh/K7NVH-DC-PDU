@@ -200,9 +200,9 @@ static inline void INPUT_Parse(void) {
 		return;
 	}
 	if (strncmp_P(DATA_IN, PSTR("PON"), 3) == 0) {
-		if (DATA_IN[3] >= 49 && DATA_IN[3] <= 56) {
+		if (DATA_IN[3] >= '1' && DATA_IN[3] <= '8') {
 			// Parse argument for specific port
-			PORT_CTL(DATA_IN[3]-48-1, 1);
+			PORT_CTL(DATA_IN[3]-'1', 1);
 			printPGMStr(STR_NR_Port);
 			printPGMStr(STR_Enabled);
 			return;
@@ -218,9 +218,9 @@ static inline void INPUT_Parse(void) {
 		}
 	}
 	if (strncmp_P(DATA_IN, PSTR("POFF"), 4) == 0) {
-		if (DATA_IN[4] >= 49 && DATA_IN[4] <= 56) {
+		if (DATA_IN[4] >= '1' && DATA_IN[4] <= '8') {
 			// Parse argument for specific port
-			PORT_CTL(DATA_IN[4]-48-1, 0);
+			PORT_CTL(DATA_IN[4]-'1', 0);
 			printPGMStr(STR_NR_Port);
 			printPGMStr(STR_Disabled);
 			return;
@@ -237,9 +237,9 @@ static inline void INPUT_Parse(void) {
 	}
 	if (strncmp_P(DATA_IN, PSTR("PDEFON"), 6) == 0) {
 		// Set the default state to ON
-		if (DATA_IN[6] >= 49 && DATA_IN[6] <= 56) {
+		if (DATA_IN[6] >= '1' && DATA_IN[6] <= '8') {
 			// Parse argument for specific port
-			PORT_DEF[DATA_IN[6]-48-1] = 1;
+			PORT_DEF[DATA_IN[6]-'1'] = 1;
 			EEPROM_Write_Port_Defaults();
 			printPGMStr(STR_Port_Default);
 			printPGMStr(STR_Enabled);
@@ -258,9 +258,9 @@ static inline void INPUT_Parse(void) {
 	}
 	if (strncmp_P(DATA_IN, PSTR("PDEFOFF"), 7) == 0) {
 		// Set the default state to OFF
-		if (DATA_IN[7] >= 49 && DATA_IN[7] <= 56) {
+		if (DATA_IN[7] >= '1' && DATA_IN[7] <= '8') {
 			// Parse argument for specific port
-			PORT_DEF[DATA_IN[7]-48-1] = 0;
+			PORT_DEF[DATA_IN[7]-'1'] = 0;
 			EEPROM_Write_Port_Defaults();
 			printPGMStr(STR_Port_Default);
 			printPGMStr(STR_Disabled);
