@@ -1,5 +1,6 @@
 /* (c) 2014 Nigel Vander Houwen */
 //
+// TODO
 // Save PCYCLE delay to EEPROM
 // Implement PCYCLE
 // Finish VSETREF implementation
@@ -26,7 +27,7 @@ float REF_V;
 uint8_t PORT8_SENSE; // 0 = Current, 1 = Voltage
 
 // Port to ADC Address look up table
-uint8_t ADC_Ports[8] = \
+const uint8_t ADC_Ports[8] = \
 		{0b10010000, 0b10000000, 0b10110000, 0b10100000, \
 		 0b11010000, 0b11000000, 0b11110000, 0b11100000};
 float STEP_V = 0; // Will be set at startup.
@@ -301,7 +302,7 @@ static inline void PRINT_Status(void) {
 		fprintf(&USBSerialStream, "%.2fV", voltage);
 	}
 	for(uint8_t i = 0; i < 8; i++) {
-		printPGMStr(PSTR("\r\nPORT "));
+		printPGMStr(STR_NR_Port);
 		fprintf(&USBSerialStream, "%i \"%s\": ", i+1, EEPROM_Read_Port_Name(i));
 		if (PORT_STATE[i] == 1) { printPGMStr(PSTR("ON")); } else { printPGMStr(PSTR("OFF")); }
 		if (i == 7 && PORT8_SENSE == 1) break;
