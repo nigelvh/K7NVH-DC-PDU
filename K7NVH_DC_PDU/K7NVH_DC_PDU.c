@@ -1,8 +1,6 @@
 /* (c) 2015 Nigel Vander Houwen */
 //
 // TODO
-// Save PCYCLE delay to EEPROM
-// Implement PCYCLE
 // Finish VSETREF implementation
 // Finish PSETNAME implementation
 // HIGH current safety shutoff
@@ -18,6 +16,7 @@ int main(void) {
 	EEPROM_Read_Port_Defaults();
 	EEPROM_Read_REF_V();
 	EEPROM_Read_P8_Sense();
+	EEPROM_Read_PCycle_Time();
 
 	// Initialize some variables
 	STEP_V = REF_V / 1024;
@@ -148,7 +147,7 @@ static inline void INPUT_Clear(void) {
 
 // Parse command arguments and return pd_set bitmap with relevant port
 // bits set.
-void INPUT_Parse_args(pd_set *pd, char *str) {
+static inline void INPUT_Parse_args(pd_set *pd, char *str) {
 	*pd = 0;
 
 	while (*str != 0 && str < (DATA_IN + DATA_BUFF_LEN)) {
@@ -195,6 +194,39 @@ static inline void INPUT_Parse(void) {
 			}
 		}
 		return;
+	}
+	if (strncmp_P(DATA_IN, PSTR("PCYCLE"), 6) == 0) {
+		INPUT_Parse_args(&pd, DATA_IN + 6);
+		for(uint8_t i = 0; i < PORT_CNT; i++) {
+			if (pd & (1 << i)) {
+				PORT_CTL(i, 0);
+				printPGMStr(STR_NR_Port);
+				fprintf(&USBSerialStream, "%i ", i+1);
+				printPGMStr(STR_Disabled);
+			}
+		}
+		for(uint16_t i = 0; i < (PCYCLE_TIME * 10); i++) {
+			_delay_ms(100);
+			run_lufa();
+		}
+		for(uint8_t i = 0; i < PORT_CNT; i++) {
+			if (pd & (1 << i)) {
+				PORT_CTL(i, 1);
+				printPGMStr(STR_NR_Port);
+				fprintf(&USBSerialStream, "%i ", i+1);
+				printPGMStr(STR_Enabled);
+			}
+		}
+		return;
+	}
+	if (strncmp_P(DATA_IN, PSTR("SETPCYCLE"), 9) == 0) {
+		uint16_t temp_set_time = atoi(DATA_IN + 9);
+		if (temp_set_time <= PCYCLE_MAX_TIME) {
+			printPGMStr(PSTR("\r\nPCYCLE TIME: "));
+			fprintf(&USBSerialStream, "%i", temp_set_time);
+			EEPROM_Write_PCycle_Time((uint8_t)temp_set_time);
+			return;
+		}
 	}
 	if (strncmp_P(DATA_IN, PSTR("PDEFON"), 6) == 0) {
 		INPUT_Parse_args(&pd, DATA_IN + 6);
@@ -372,6 +404,16 @@ static inline void EEPROM_Read_P8_Sense(void) {
 	if (PORT8_SENSE < 0 || PORT8_SENSE > 1) PORT8_SENSE = 0;
 }
 
+static inline void EEPROM_Write_PCycle_Time(uint8_t time) {
+	eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_CYCLE_TIME), time);
+	PCYCLE_TIME = time;
+}
+
+static inline void EEPROM_Read_PCycle_Time(void) {
+	PCYCLE_TIME = eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_CYCLE_TIME));
+	if (PCYCLE_TIME < 0 || PCYCLE_TIME > PCYCLE_MAX_TIME) PCYCLE_TIME = 1; 
+}
+
 // Read the stored port name
 static inline const char * EEPROM_Read_Port_Name(uint8_t port) {
 	char working[16];
@@ -393,6 +435,9 @@ static inline void EEPROM_Dump_Vars(void) {
 	// Read P8_SENSE
 	printPGMStr(PSTR("\r\nP8SENSE: "));
 	fprintf(&USBSerialStream, "%i", eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_P8_SENSE)));
+	// Read Port Cycle Time
+	printPGMStr(PSTR("\r\nPCYCLE: "));
+	fprintf(&USBSerialStream, "%iS", eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_CYCLE_TIME)));
 	// Read Port Names
 	printPGMStr(PSTR("\r\nPNAMES: "));
 	for(uint8_t i = 0; i < PORT_CNT; i++) {

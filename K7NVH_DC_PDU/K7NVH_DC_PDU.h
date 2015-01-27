@@ -66,10 +66,14 @@
 #define LED1 PD4
 #define LED2 PD5
 
+// Limits
+#define PCYCLE_MAX_TIME 30
+
 // EEPROM Offsets
 #define EEPROM_OFFSET_PORT_DEFAULTS 0 // Eight bytes at offset 0
 #define EEPROM_OFFSET_REF_V 8 // Four bytes at offset 8
 #define EEPROM_OFFSET_P8_SENSE 12 // One byte at offset 12
+#define EEPROM_OFFSET_CYCLE_TIME 13 // One byte at offset 13
 
 #define EEPROM_OFFSET_P0NAME 64 // 16 bytes at offset 64
 #define EEPROM_OFFSET_P1NAME 80 // 16 bytes at offset 80
@@ -103,6 +107,7 @@ const char STR_Port_8_Sense[] PROGMEM = "\r\nPORT 8 SENSE ";
 uint8_t PORT_DEF[PORT_CNT]; // Default state for the ports
 float REF_V;
 uint8_t PORT8_SENSE; // 0 = Current, 1 = Voltage
+uint8_t PCYCLE_TIME; // Seconds
  
 // Port to ADC Address look up table
 const uint8_t ADC_Ports[PORT_CNT] = \
@@ -163,6 +168,8 @@ static inline void EEPROM_Read_REF_V(void);
 static inline void EEPROM_Write_REF_V(void);
 static inline void EEPROM_Read_P8_Sense(void);
 static inline void EEPROM_Write_P8_Sense(uint8_t mode);
+static inline void EEPROM_Read_PCycle_Time(void);
+static inline void EEPROM_Write_PCycle_Time(uint8_t time);
 static inline const char * EEPROM_Read_Port_Name(uint8_t port);
 static inline void EEPROM_Dump_Vars(void);
 
@@ -175,5 +182,6 @@ static inline void PRINT_Status(void);
 
 static inline void INPUT_Clear(void);
 static inline void INPUT_Parse(void);
+static inline void INPUT_Parse_args(pd_set *pd, char *str);
 
 #endif
