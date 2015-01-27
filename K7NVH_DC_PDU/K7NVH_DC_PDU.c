@@ -118,9 +118,10 @@ int main(void) {
 
 				default:
 					// Normal char buffering
-					if (DATA_IN_POS < 31) {
+					if (DATA_IN_POS < (DATA_BUFF_LEN - 1)) {
 						DATA_IN[DATA_IN_POS] = BYTE_IN;
 						DATA_IN_POS++;
+						DATA_IN[DATA_IN_POS] = 0;
 					} else {
 						// Input is too long.
 						// TODO: print message that command is too long.
@@ -147,7 +148,24 @@ static inline void INPUT_Clear(void) {
 	printPGMStr(PSTR("\r\n\r\n> "));
 }
 
+// Parse command arguments and return pd_set bitmap with relevant port
+// bits set.
+void INPUT_Parse_args(pd_set *pd, char *str) {
+	*pd = 0;
+
+	while (*str != 0 && str < (DATA_IN + DATA_BUFF_LEN)) {
+		if (*str >= '1' && *str <= '8') {
+			*pd = *pd | (1 << (*str - '1'));
+		} else if (*str == 'A' || *str == 'a') {
+			pd = 0b11111111;
+		}
+		str++;
+	}
+}
+
 static inline void INPUT_Parse(void) {
+	pd_set pd; // Port descriptor bitmap
+
 	if (strcmp_P(DATA_IN, PSTR("STATUS")) == 0) {
 		PRINT_Status();
 		return;
@@ -157,82 +175,54 @@ static inline void INPUT_Parse(void) {
 		return;
 	}
 	if (strncmp_P(DATA_IN, PSTR("PON"), 3) == 0) {
-		if (DATA_IN[3] >= '1' && DATA_IN[3] <= '8') {
-			// Parse argument for specific port
-			PORT_CTL(DATA_IN[3]-'1', 1);
-			printPGMStr(STR_NR_Port);
-			printPGMStr(STR_Enabled);
-			return;
-		} else if (DATA_IN[3] == 'A') {
-			// Set all ports on
-			for (uint8_t i = 0; i < PORT_CNT; i++) {
+		INPUT_Parse_args(&pd, DATA_IN + 3);
+		for (uint8_t i = 0; i < PORT_CNT; i++) {
+			if (pd & (1 << i)) {
 				PORT_CTL(i, 1);
 				printPGMStr(STR_NR_Port);
 				fprintf(&USBSerialStream, "%i ", i);
 				printPGMStr(STR_Enabled);
 			}
-			return;
 		}
+		return;
 	}
 	if (strncmp_P(DATA_IN, PSTR("POFF"), 4) == 0) {
-		if (DATA_IN[4] >= '1' && DATA_IN[4] <= '8') {
-			// Parse argument for specific port
-			PORT_CTL(DATA_IN[4]-'1', 0);
-			printPGMStr(STR_NR_Port);
-			printPGMStr(STR_Disabled);
-			return;
-		} else if (DATA_IN[4] == 'A') {
-			// Set all ports off
-			for(uint8_t i = 0; i < PORT_CNT; i++) {
+		INPUT_Parse_args(&pd, DATA_IN + 4);
+		for(uint8_t i = 0; i < PORT_CNT; i++) {
+			if (pd & (1 << i)) {
 				PORT_CTL(i, 0);
 				printPGMStr(STR_NR_Port);
 				fprintf(&USBSerialStream, "%i ", i);
 				printPGMStr(STR_Disabled);
 			}
-			return;
 		}
+		return;
 	}
 	if (strncmp_P(DATA_IN, PSTR("PDEFON"), 6) == 0) {
-		// Set the default state to ON
-		if (DATA_IN[6] >= '1' && DATA_IN[6] <= '8') {
-			// Parse argument for specific port
-			PORT_DEF[DATA_IN[6]-'1'] = 1;
-			EEPROM_Write_Port_Defaults();
-			printPGMStr(STR_Port_Default);
-			printPGMStr(STR_Enabled);
-			return;
-		} else if (DATA_IN[6] == 'A') {
-			// Perform for all ports
-			for (uint8_t i = 0; i < PORT_CNT; i++) {
+		INPUT_Parse_args(&pd, DATA_IN + 6);
+		for (uint8_t i = 0; i < PORT_CNT; i++) {
+			if (pd & (1 << i)) {
 				PORT_DEF[i] = 1;
 				printPGMStr(STR_Port_Default);
 				fprintf(&USBSerialStream, "%i ", i);
 				printPGMStr(STR_Enabled);
 			}
-			EEPROM_Write_Port_Defaults();
-			return;
 		}
+		EEPROM_Write_Port_Defaults();
+		return;
 	}
 	if (strncmp_P(DATA_IN, PSTR("PDEFOFF"), 7) == 0) {
-		// Set the default state to OFF
-		if (DATA_IN[7] >= '1' && DATA_IN[7] <= '8') {
-			// Parse argument for specific port
-			PORT_DEF[DATA_IN[7]-'1'] = 0;
-			EEPROM_Write_Port_Defaults();
-			printPGMStr(STR_Port_Default);
-			printPGMStr(STR_Disabled);
-			return;
-		} else if (DATA_IN[7] == 'A') {
-			// Perform for all ports
-			for(uint8_t i = 0; i < PORT_CNT; i++) {
+		INPUT_Parse_args(&pd, DATA_IN + 7);
+		for(uint8_t i = 0; i < PORT_CNT; i++) {
+			if (pd & (1 << i)) {
 				PORT_DEF[i] = 0;
 				printPGMStr(STR_Port_Default);
 				fprintf(&USBSerialStream, "%i ", i);
 				printPGMStr(STR_Disabled);
 			}
-			EEPROM_Write_Port_Defaults();
-			return;
 		}
+		EEPROM_Write_Port_Defaults();
+		return;
 	}
 	if (strncmp_P(DATA_IN, PSTR("P8SENSEV"), 8) == 0) {
 		EEPROM_Write_P8_Sense(1);

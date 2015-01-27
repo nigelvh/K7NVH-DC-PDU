@@ -74,6 +74,7 @@
 #define EEPROM_OFFSET_P6NAME 160 // 16 bytes at offset 160
 #define EEPROM_OFFSET_P7NAME 176 // 16 bytes at offset 176
 
+typedef uint8_t pd_set; // Port Descriptor Set - bitmap of ports
 
 // Standard file stream for the CDC interface when set up, so that the
 // virtual CDC COM port can be used like any regular character stream
