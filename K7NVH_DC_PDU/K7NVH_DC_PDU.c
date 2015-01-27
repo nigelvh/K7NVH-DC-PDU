@@ -12,7 +12,6 @@
 
 #include "K7NVH_DC_PDU.h"
 
-
 // Main program entry point.
 int main(void) {
 	// Read EEPROM stored variables
@@ -83,7 +82,6 @@ int main(void) {
 	}
 
 	INPUT_Clear();
-
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~ Main system loop

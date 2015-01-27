@@ -2,6 +2,10 @@
 #ifndef _K7NVH_DC_PDU_H_
 #define _K7NVH_DC_PDU_H_
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// ~~ Includes
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 #include <avr/io.h>
 #include <avr/wdt.h>
 #include <avr/power.h>
@@ -17,11 +21,13 @@
 
 #include "Descriptors.h"
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// ~~ Macros
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #define SOFTWAREVERS "\r\nK7NVH DC PDU V1.0\r\n"
 #define PORT_CNT    8
 #define DATA_BUFF_LEN    32
-
 
 #define SPI_CLOCK_DIV4 0x00
 #define SPI_CLOCK_DIV16 0x01
@@ -73,6 +79,10 @@
 #define EEPROM_OFFSET_P5NAME 144 // 16 bytes at offset 144
 #define EEPROM_OFFSET_P6NAME 160 // 16 bytes at offset 160
 #define EEPROM_OFFSET_P7NAME 176 // 16 bytes at offset 176
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// ~~ Globals
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 typedef uint8_t pd_set; // Port Descriptor Set - bitmap of ports
 
@@ -131,14 +141,15 @@ USB_ClassInfo_CDC_Device_t VirtualSerial_CDC_Interface = {
 	},
 };
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// ~~ Prototypes
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 static inline void run_lufa(void);
 
 static inline void SPI_begin(void);
 static inline void SPI_end(void);
 static inline uint8_t SPI_transfer(uint8_t _data);
-//void SPI_attachInterrupt(void);
-//void SPI_detachInterrupt(void);
 static inline void SPI_setBitOrder(uint8_t bitOrder);
 static inline void SPI_setDataMode(uint8_t mode);
 static inline void SPI_setClockDivider(uint8_t rate);
