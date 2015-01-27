@@ -180,7 +180,7 @@ static inline void INPUT_Parse(void) {
 			if (pd & (1 << i)) {
 				PORT_CTL(i, 1);
 				printPGMStr(STR_NR_Port);
-				fprintf(&USBSerialStream, "%i ", i);
+				fprintf(&USBSerialStream, "%i ", i+1);
 				printPGMStr(STR_Enabled);
 			}
 		}
@@ -192,7 +192,7 @@ static inline void INPUT_Parse(void) {
 			if (pd & (1 << i)) {
 				PORT_CTL(i, 0);
 				printPGMStr(STR_NR_Port);
-				fprintf(&USBSerialStream, "%i ", i);
+				fprintf(&USBSerialStream, "%i ", i+1);
 				printPGMStr(STR_Disabled);
 			}
 		}
@@ -204,7 +204,7 @@ static inline void INPUT_Parse(void) {
 			if (pd & (1 << i)) {
 				PORT_DEF[i] = 1;
 				printPGMStr(STR_Port_Default);
-				fprintf(&USBSerialStream, "%i ", i);
+				fprintf(&USBSerialStream, "%i ", i+1);
 				printPGMStr(STR_Enabled);
 			}
 		}
@@ -217,7 +217,7 @@ static inline void INPUT_Parse(void) {
 			if (pd & (1 << i)) {
 				PORT_DEF[i] = 0;
 				printPGMStr(STR_Port_Default);
-				fprintf(&USBSerialStream, "%i ", i);
+				fprintf(&USBSerialStream, "%i ", i+1);
 				printPGMStr(STR_Disabled);
 			}
 		}
