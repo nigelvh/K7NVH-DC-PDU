@@ -87,16 +87,25 @@ int main(void) {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	for(;;) {
+		// Read a byte from the USB serial stream
 		BYTE_IN = CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface);
 
+		// USB Serial stream will return <0 if no bytes are available.
 		if (BYTE_IN >= 0) {
+			// We've gotten a char, so lets blink the green LED onboard. This LED will 
+			// remain lit while the board is processing commands. This is most evident 
+			// during a PCYCLE.
 			LED_CTL(1, 1);
+			
+			// Echo the char we just received back out the serial stream so the user's 
+			// console will display it.
 			fputc(BYTE_IN, &USBSerialStream);
 
+			// Switch on the input byte to determine what is is and what to do.
 			switch(BYTE_IN) {
 				case 8:
 				case 127:
-					// Backspace
+					// Handle Backspace chars.
 					if (DATA_IN_POS > 0) DATA_IN_POS--;
 					DATA_IN[DATA_IN_POS] = 0;
 					break;
@@ -128,7 +137,10 @@ int main(void) {
 			}
 		}
 
+		// Turn the green LED back off again
 		LED_CTL(1, 0);
+		
+		// Keep the LUFA USB stuff fed regularly.
 		run_lufa();
 	}
 }
@@ -137,6 +149,7 @@ int main(void) {
 // ~~ Command Parsing Functions
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+// Flush out our data input buffer, reset our position variable, and print a new prompt.
 static inline void INPUT_Clear(void) {
 	for (uint8_t i = 0; i < DATA_BUFF_LEN; i++) {
 		DATA_IN[i] = 0;
@@ -160,17 +173,21 @@ static inline void INPUT_Parse_args(pd_set *pd, char *str) {
 	}
 }
 
+// We've gotten a new command, parse out what they want.
 static inline void INPUT_Parse(void) {
 	pd_set pd; // Port descriptor bitmap
 
+	// Print a port status summary for all ports
 	if (strcmp_P(DATA_IN, PSTR("STATUS")) == 0) {
 		PRINT_Status();
 		return;
 	}
+	// Print a report of the variables stored in EEPROM
 	if (strcmp_P(DATA_IN, PSTR("EEPROMDUMP")) == 0) {
 		EEPROM_Dump_Vars();
 		return;
 	}
+	// Turn on a port or list of ports
 	if (strncmp_P(DATA_IN, PSTR("PON"), 3) == 0) {
 		INPUT_Parse_args(&pd, DATA_IN + 3);
 		for (uint8_t i = 0; i < PORT_CNT; i++) {
@@ -183,6 +200,7 @@ static inline void INPUT_Parse(void) {
 		}
 		return;
 	}
+	// Turn off a port or a list of ports
 	if (strncmp_P(DATA_IN, PSTR("POFF"), 4) == 0) {
 		INPUT_Parse_args(&pd, DATA_IN + 4);
 		for(uint8_t i = 0; i < PORT_CNT; i++) {
@@ -195,6 +213,7 @@ static inline void INPUT_Parse(void) {
 		}
 		return;
 	}
+	// Power cycle a port or list of ports. Time is defined by PCYCLE_TIME.
 	if (strncmp_P(DATA_IN, PSTR("PCYCLE"), 6) == 0) {
 		INPUT_Parse_args(&pd, DATA_IN + 6);
 		for(uint8_t i = 0; i < PORT_CNT; i++) {
@@ -219,6 +238,7 @@ static inline void INPUT_Parse(void) {
 		}
 		return;
 	}
+	// Set PCYCLE_TIME and store in EEPROM
 	if (strncmp_P(DATA_IN, PSTR("SETPCYCLE"), 9) == 0) {
 		uint16_t temp_set_time = atoi(DATA_IN + 9);
 		if (temp_set_time <= PCYCLE_MAX_TIME) {
@@ -228,6 +248,7 @@ static inline void INPUT_Parse(void) {
 			return;
 		}
 	}
+	// Set a port or list of ports default state at startup to ON
 	if (strncmp_P(DATA_IN, PSTR("PDEFON"), 6) == 0) {
 		INPUT_Parse_args(&pd, DATA_IN + 6);
 		for (uint8_t i = 0; i < PORT_CNT; i++) {
@@ -241,6 +262,7 @@ static inline void INPUT_Parse(void) {
 		EEPROM_Write_Port_Defaults();
 		return;
 	}
+	// Set a port or list of ports default state at startup to OFF
 	if (strncmp_P(DATA_IN, PSTR("PDEFOFF"), 7) == 0) {
 		INPUT_Parse_args(&pd, DATA_IN + 7);
 		for(uint8_t i = 0; i < PORT_CNT; i++) {
@@ -254,18 +276,21 @@ static inline void INPUT_Parse(void) {
 		EEPROM_Write_Port_Defaults();
 		return;
 	}
+	// Set the Port 8 Sense mode to VOLTAGE
 	if (strncmp_P(DATA_IN, PSTR("P8SENSEV"), 8) == 0) {
 		EEPROM_Write_P8_Sense(1);
 		printPGMStr(STR_Port_8_Sense);
 		printPGMStr(PSTR("VOLTAGE"));
 		return;
 	}
+	// Set the Port 8 Sense mode to CURRENT
 	if (strncmp_P(DATA_IN, PSTR("P8SENSEI"), 8) == 0) {
 		EEPROM_Write_P8_Sense(0);
 		printPGMStr(STR_Port_8_Sense);
 		printPGMStr(PSTR("CURRENT"));
 		return;
 	}
+	// NOT FULLY IMPLMENTED YET! Set the VREF voltage and store in EEPROM to correct voltage readings.
 	if (strncmp_P(DATA_IN, PSTR("SETVREF"), 7) == 0) {
 		if (DATA_IN_POS > 7) {
 			char temp_str[5];
@@ -276,6 +301,7 @@ static inline void INPUT_Parse(void) {
 			return;
 		}
 	}
+	// If none of the above commands were recognized, print a generic error.
 	printPGMStr(PSTR("\r\nUNRECOGNIZED COMMAND"));
 }
 
@@ -283,6 +309,7 @@ static inline void INPUT_Parse(void) {
 // ~~ Printing Functions
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+// Print a summary of all ports status'
 static inline void PRINT_Status(void) {
 	float voltage, current;
 	if (PORT8_SENSE == 1) {
@@ -305,6 +332,7 @@ static inline void PRINT_Status(void) {
 	}
 }
 
+// Print a PGM stored string
 static inline void printPGMStr(PGM_P s) {
 	char c;
 	while((c = pgm_read_byte(s++)) != 0) fputc(c, &USBSerialStream);
@@ -314,6 +342,7 @@ static inline void printPGMStr(PGM_P s) {
 // ~~ Port/LED Control Functions
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+// Turn a port ON (state == 1) or OFF (state == 0)
 static inline uint8_t PORT_CTL(uint8_t port, uint8_t state) {
 	// If state isn't on or off, or the port isn't a valid number, return error
 	if (state != 0 && state != 1) return 1;
@@ -341,6 +370,8 @@ static inline uint8_t PORT_CTL(uint8_t port, uint8_t state) {
 	return 0;
 }
 
+// Turn a LED ON (state == 1) or OFF (state == 0)
+// LED 1 == Green, LED 0 == Red
 static inline void LED_CTL(uint8_t led, uint8_t state) {
 	if (led == 1) {
 		if (state == 1) {
@@ -404,11 +435,13 @@ static inline void EEPROM_Read_P8_Sense(void) {
 	if (PORT8_SENSE < 0 || PORT8_SENSE > 1) PORT8_SENSE = 0;
 }
 
+// Write the PCYCLE_TIME to EEPROM
 static inline void EEPROM_Write_PCycle_Time(uint8_t time) {
 	eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_CYCLE_TIME), time);
 	PCYCLE_TIME = time;
 }
 
+// Read PCYCLE_TIME from EEPROM
 static inline void EEPROM_Read_PCycle_Time(void) {
 	PCYCLE_TIME = eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_CYCLE_TIME));
 	if (PCYCLE_TIME < 0 || PCYCLE_TIME > PCYCLE_MAX_TIME) PCYCLE_TIME = 1; 
@@ -480,6 +513,7 @@ static inline uint16_t ADC_Read_Raw(uint8_t port) {
 // ~~ SPI Functions
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+// Set up the SPI registers to enable the SPI hardware
 static inline void SPI_begin(void) {
 	// Set SS to high so a connected chip will be "deselected" by default
 	// Set SS to output
@@ -490,23 +524,17 @@ static inline void SPI_begin(void) {
 	// Set output for SCK and MOSI pin
 }
 
+// Disable the SPI hardware
 static inline void SPI_end(void) {
 	SPCR &= ~_BV(SPE);
 }
 
+// Transfer out a byte on the SPI port, and simultaneously read a byte from SPI
 static inline uint8_t SPI_transfer(uint8_t _data) {
 	SPDR = _data;
 	while(!(SPSR & _BV(SPIF))) {};
 	return SPDR;
 }
-
-//void SPI_attachInterrupt(void) {
-//  SPCR |= _BV(SPIE);
-//}
-
-//void SPI_detachInterrupt(void) {
-//  SPCR &= ~_BV(SPIE);
-//}
 
 // 0 = LSBFIRST
 static inline void SPI_setBitOrder(uint8_t bitOrder) {
@@ -517,10 +545,12 @@ static inline void SPI_setBitOrder(uint8_t bitOrder) {
 	}
 }
 
+// Set SPI data mode (where in the cycle bits are to be read)
 static inline void SPI_setDataMode(uint8_t mode) {
 	SPCR = (SPCR & ~SPI_MODE_MASK) | mode;
 }
 
+// Set the SPI clock divider to determine overall speed
 static inline void SPI_setClockDivider(uint8_t rate) {
 	SPCR = (SPCR & ~SPI_CLOCK_MASK) | (rate & SPI_CLOCK_MASK);
 	SPSR = (SPSR & ~SPI_2XCLOCK_MASK) | ((rate >> 2) & SPI_2XCLOCK_MASK);
@@ -530,6 +560,7 @@ static inline void SPI_setClockDivider(uint8_t rate) {
 // ~~ USB Functions
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+// Run the LUFA USB tasks (except reading)
 static inline void run_lufa(void) {
 	//CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface);
 	CDC_Device_USBTask(&VirtualSerial_CDC_Interface);
