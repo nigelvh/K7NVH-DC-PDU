@@ -1,4 +1,6 @@
 /* (c) 2015 Nigel Vander Houwen */
+#ifndef _K7NVH_DC_PDU_H_
+#define _K7NVH_DC_PDU_H_
 
 #include <avr/io.h>
 #include <avr/wdt.h>
@@ -10,10 +12,16 @@
 #include <avr/pgmspace.h>
 #include <avr/eeprom.h>
 
-#include "Descriptors.h"
-
 #include <LUFA/Drivers/USB/USB.h>
 #include <LUFA/Platform/Platform.h>
+
+#include "Descriptors.h"
+
+
+#define SOFTWAREVERS "\r\nK7NVH DC PDU V1.0\r\n"
+#define PORT_CNT    8
+#define DATA_BUFF_LEN    32
+
 
 #define SPI_CLOCK_DIV4 0x00
 #define SPI_CLOCK_DIV16 0x01
@@ -31,9 +39,6 @@
 #define SPI_MODE_MASK 0x0C  // CPOL = bit 3, CPHA = bit 2 on SPCR
 #define SPI_CLOCK_MASK 0x03  // SPR1 = bit 1, SPR0 = bit 0 on SPCR
 #define SPI_2XCLOCK_MASK 0x01  // SPI2X = bit 0 on SPSR
-
-// Standard file stream for the CDC interface when set up, so that the virtual CDC COM port can be used like any regular character stream in the C APIs.
-static FILE USBSerialStream;
 
 // SPI pins
 #define SPI_SS PB0
@@ -69,6 +74,64 @@ static FILE USBSerialStream;
 #define EEPROM_OFFSET_P6NAME 160 // 16 bytes at offset 160
 #define EEPROM_OFFSET_P7NAME 176 // 16 bytes at offset 176
 
+typedef uint8_t pd_set; // Port Descriptor Set - bitmap of ports
+
+// Standard file stream for the CDC interface when set up, so that the
+// virtual CDC COM port can be used like any regular character stream
+// in the C APIs.
+static FILE USBSerialStream;
+
+// Reused strings
+const char STR_NR_Port[] PROGMEM = "\r\nPORT ";
+const char STR_Enabled[] PROGMEM = "ENABLED";
+const char STR_Disabled[] PROGMEM = "DISABLED";
+const char STR_Port_Init[] PROGMEM = "PORT INIT:\r\n";
+const char STR_Port_Default[] PROGMEM = "\r\nPORT DEFAULT ";
+const char STR_Port_8_Sense[] PROGMEM = "\r\nPORT 8 SENSE ";
+
+// Variables stored in EEPROM
+uint8_t PORT_DEF[PORT_CNT]; // Default state for the ports
+float REF_V;
+uint8_t PORT8_SENSE; // 0 = Current, 1 = Voltage
+ 
+// Port to ADC Address look up table
+const uint8_t ADC_Ports[PORT_CNT] = \
+		{0b10010000, 0b10000000, 0b10110000, 0b10100000, \
+		 0b11010000, 0b11000000, 0b11110000, 0b11100000};
+float STEP_V = 0; // Will be set at startup.
+
+// State Variables
+uint8_t PORT_STATE[PORT_CNT];
+char DATA_IN[DATA_BUFF_LEN];
+uint8_t DATA_IN_POS = 0;
+
+/** LUFA CDC Class driver interface configuration and state information.
+ * This structure is passed to all CDC Class driver functions, so that
+ * multiple instances of the same class within a device can be
+ * differentiated from one another.
+ */ 
+USB_ClassInfo_CDC_Device_t VirtualSerial_CDC_Interface = {
+	.Config = {
+		.ControlInterfaceNumber   = INTERFACE_ID_CDC_CCI,
+		.DataINEndpoint           = {
+			.Address          = CDC_TX_EPADDR,
+			.Size             = CDC_TXRX_EPSIZE,
+			.Banks            = 1,
+		},
+		.DataOUTEndpoint = {
+			.Address          = CDC_RX_EPADDR,
+			.Size             = CDC_TXRX_EPSIZE,
+			.Banks            = 1,
+		},
+		.NotificationEndpoint = {
+			.Address          = CDC_NOTIFICATION_EPADDR,
+			.Size             = CDC_NOTIFICATION_EPSIZE,
+			.Banks            = 1,
+		},
+	},
+};
+
+
 static inline void run_lufa(void);
 
 static inline void SPI_begin(void);
@@ -101,3 +164,5 @@ static inline void PRINT_Status(void);
 
 static inline void INPUT_Clear(void);
 static inline void INPUT_Parse(void);
+
+#endif

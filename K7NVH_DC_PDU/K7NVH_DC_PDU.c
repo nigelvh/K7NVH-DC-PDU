@@ -12,59 +12,6 @@
 
 #include "K7NVH_DC_PDU.h"
 
-#define SOFTWAREVERS "\r\nK7NVH DC PDU V1.0\r\n"
-#define PORT_CNT	8
-#define DATA_BUFF_LEN	32
-
-// Reused strings
-const char STR_NR_Port[] PROGMEM = "\r\nPORT ";
-const char STR_Enabled[] PROGMEM = "ENABLED";
-const char STR_Disabled[] PROGMEM = "DISABLED";
-const char STR_Port_Init[] PROGMEM = "PORT INIT:\r\n";
-const char STR_Port_Default[] PROGMEM = "\r\nPORT DEFAULT ";
-const char STR_Port_8_Sense[] PROGMEM = "\r\nPORT 8 SENSE ";
-
-// Variables stored in EEPROM
-uint8_t PORT_DEF[PORT_CNT]; // Default state for the ports
-float REF_V;
-uint8_t PORT8_SENSE; // 0 = Current, 1 = Voltage
-
-// Port to ADC Address look up table
-const uint8_t ADC_Ports[PORT_CNT] = \
-		{0b10010000, 0b10000000, 0b10110000, 0b10100000, \
-		 0b11010000, 0b11000000, 0b11110000, 0b11100000};
-float STEP_V = 0; // Will be set at startup.
-
-// State Variables
-uint8_t PORT_STATE[PORT_CNT];
-char DATA_IN[DATA_BUFF_LEN];
-uint8_t DATA_IN_POS = 0;
-
-/** LUFA CDC Class driver interface configuration and state information.
- * This structure is passed to all CDC Class driver functions, so that
- * multiple instances of the same class within a device can be
- * differentiated from one another.
- */ 
-USB_ClassInfo_CDC_Device_t VirtualSerial_CDC_Interface = {
-	.Config = {
-		.ControlInterfaceNumber   = INTERFACE_ID_CDC_CCI,
-		.DataINEndpoint           = {
-			.Address          = CDC_TX_EPADDR,
-			.Size             = CDC_TXRX_EPSIZE,
-			.Banks            = 1,
-		},
-		.DataOUTEndpoint = {
-			.Address          = CDC_RX_EPADDR,
-			.Size             = CDC_TXRX_EPSIZE,
-			.Banks            = 1,
-		},
-		.NotificationEndpoint = {
-			.Address          = CDC_NOTIFICATION_EPADDR,
-			.Size             = CDC_NOTIFICATION_EPSIZE,
-			.Banks            = 1,
-		},
-	},
-};
 
 // Main program entry point.
 int main(void) {
@@ -171,9 +118,10 @@ int main(void) {
 
 				default:
 					// Normal char buffering
-					if (DATA_IN_POS < 31) {
+					if (DATA_IN_POS < (DATA_BUFF_LEN - 1)) {
 						DATA_IN[DATA_IN_POS] = BYTE_IN;
 						DATA_IN_POS++;
+						DATA_IN[DATA_IN_POS] = 0;
 					} else {
 						// Input is too long.
 						// TODO: print message that command is too long.
@@ -200,7 +148,24 @@ static inline void INPUT_Clear(void) {
 	printPGMStr(PSTR("\r\n\r\n> "));
 }
 
+// Parse command arguments and return pd_set bitmap with relevant port
+// bits set.
+void INPUT_Parse_args(pd_set *pd, char *str) {
+	*pd = 0;
+
+	while (*str != 0 && str < (DATA_IN + DATA_BUFF_LEN)) {
+		if (*str >= '1' && *str <= '8') {
+			*pd = *pd | (1 << (*str - '1'));
+		} else if (*str == 'A' || *str == 'a') {
+			*pd = 0b11111111;
+		}
+		str++;
+	}
+}
+
 static inline void INPUT_Parse(void) {
+	pd_set pd; // Port descriptor bitmap
+
 	if (strcmp_P(DATA_IN, PSTR("STATUS")) == 0) {
 		PRINT_Status();
 		return;
@@ -210,82 +175,54 @@ static inline void INPUT_Parse(void) {
 		return;
 	}
 	if (strncmp_P(DATA_IN, PSTR("PON"), 3) == 0) {
-		if (DATA_IN[3] >= '1' && DATA_IN[3] <= '8') {
-			// Parse argument for specific port
-			PORT_CTL(DATA_IN[3]-'1', 1);
-			printPGMStr(STR_NR_Port);
-			printPGMStr(STR_Enabled);
-			return;
-		} else if (DATA_IN[3] == 'A') {
-			// Set all ports on
-			for (uint8_t i = 0; i < PORT_CNT; i++) {
+		INPUT_Parse_args(&pd, DATA_IN + 3);
+		for (uint8_t i = 0; i < PORT_CNT; i++) {
+			if (pd & (1 << i)) {
 				PORT_CTL(i, 1);
 				printPGMStr(STR_NR_Port);
 				fprintf(&USBSerialStream, "%i ", i);
 				printPGMStr(STR_Enabled);
 			}
-			return;
 		}
+		return;
 	}
 	if (strncmp_P(DATA_IN, PSTR("POFF"), 4) == 0) {
-		if (DATA_IN[4] >= '1' && DATA_IN[4] <= '8') {
-			// Parse argument for specific port
-			PORT_CTL(DATA_IN[4]-'1', 0);
-			printPGMStr(STR_NR_Port);
-			printPGMStr(STR_Disabled);
-			return;
-		} else if (DATA_IN[4] == 'A') {
-			// Set all ports off
-			for(uint8_t i = 0; i < PORT_CNT; i++) {
+		INPUT_Parse_args(&pd, DATA_IN + 4);
+		for(uint8_t i = 0; i < PORT_CNT; i++) {
+			if (pd & (1 << i)) {
 				PORT_CTL(i, 0);
 				printPGMStr(STR_NR_Port);
 				fprintf(&USBSerialStream, "%i ", i);
 				printPGMStr(STR_Disabled);
 			}
-			return;
 		}
+		return;
 	}
 	if (strncmp_P(DATA_IN, PSTR("PDEFON"), 6) == 0) {
-		// Set the default state to ON
-		if (DATA_IN[6] >= '1' && DATA_IN[6] <= '8') {
-			// Parse argument for specific port
-			PORT_DEF[DATA_IN[6]-'1'] = 1;
-			EEPROM_Write_Port_Defaults();
-			printPGMStr(STR_Port_Default);
-			printPGMStr(STR_Enabled);
-			return;
-		} else if (DATA_IN[6] == 'A') {
-			// Perform for all ports
-			for (uint8_t i = 0; i < PORT_CNT; i++) {
+		INPUT_Parse_args(&pd, DATA_IN + 6);
+		for (uint8_t i = 0; i < PORT_CNT; i++) {
+			if (pd & (1 << i)) {
 				PORT_DEF[i] = 1;
 				printPGMStr(STR_Port_Default);
 				fprintf(&USBSerialStream, "%i ", i);
 				printPGMStr(STR_Enabled);
 			}
-			EEPROM_Write_Port_Defaults();
-			return;
 		}
+		EEPROM_Write_Port_Defaults();
+		return;
 	}
 	if (strncmp_P(DATA_IN, PSTR("PDEFOFF"), 7) == 0) {
-		// Set the default state to OFF
-		if (DATA_IN[7] >= '1' && DATA_IN[7] <= '8') {
-			// Parse argument for specific port
-			PORT_DEF[DATA_IN[7]-'1'] = 0;
-			EEPROM_Write_Port_Defaults();
-			printPGMStr(STR_Port_Default);
-			printPGMStr(STR_Disabled);
-			return;
-		} else if (DATA_IN[7] == 'A') {
-			// Perform for all ports
-			for(uint8_t i = 0; i < PORT_CNT; i++) {
+		INPUT_Parse_args(&pd, DATA_IN + 7);
+		for(uint8_t i = 0; i < PORT_CNT; i++) {
+			if (pd & (1 << i)) {
 				PORT_DEF[i] = 0;
 				printPGMStr(STR_Port_Default);
 				fprintf(&USBSerialStream, "%i ", i);
 				printPGMStr(STR_Disabled);
 			}
-			EEPROM_Write_Port_Defaults();
-			return;
 		}
+		EEPROM_Write_Port_Defaults();
+		return;
 	}
 	if (strncmp_P(DATA_IN, PSTR("P8SENSEV"), 8) == 0) {
 		EEPROM_Write_P8_Sense(1);
