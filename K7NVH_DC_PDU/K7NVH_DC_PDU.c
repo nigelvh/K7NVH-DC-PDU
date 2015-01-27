@@ -1,7 +1,6 @@
 /* (c) 2015 Nigel Vander Houwen */
 //
 // TODO
-// Finish VSETREF implementation
 // Finish PSETNAME implementation
 // HIGH current safety shutoff
 // Save current limit value/port to EEPROM
@@ -130,7 +129,7 @@ int main(void) {
 						DATA_IN[DATA_IN_POS] = 0;
 					} else {
 						// Input is too long.
-						// TODO: print message that command is too long.
+						printPGMStr(STR_Unrecognized);
 						INPUT_Clear();
 					}
 					break;
@@ -290,19 +289,19 @@ static inline void INPUT_Parse(void) {
 		printPGMStr(PSTR("CURRENT"));
 		return;
 	}
-	// NOT FULLY IMPLMENTED YET! Set the VREF voltage and store in EEPROM to correct voltage readings.
+	// Set the VREF voltage and store in EEPROM to correct voltage readings.
 	if (strncmp_P(DATA_IN, PSTR("SETVREF"), 7) == 0) {
-		if (DATA_IN_POS > 7) {
-			char temp_str[5];
-			strncpy(temp_str, DATA_IN+7, 4);
-			temp_str[4] = '\0';
-			uint16_t temp_int = atoi(temp_str);
-			fprintf(&USBSerialStream, "\r\n%s %i %i", temp_str, DATA_IN_POS, temp_int);
+		uint16_t temp_set_vref = atoi(DATA_IN + 7);
+		if (temp_set_vref >= VREF_MIN && temp_set_vref <= VREF_MAX){
+			float temp_vref = (float)temp_set_vref / 1000.0;
+			EEPROM_Write_REF_V(temp_vref);
+			printPGMStr(PSTR("\r\nVREF: "));
+			fprintf(&USBSerialStream, "%.3fV", temp_vref);
 			return;
 		}
 	}
 	// If none of the above commands were recognized, print a generic error.
-	printPGMStr(PSTR("\r\nUNRECOGNIZED COMMAND"));
+	printPGMStr(STR_Unrecognized);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -401,7 +400,6 @@ static inline void EEPROM_Read_Port_Defaults(void) {
 		if (PORT_DEF[i] < 0 || PORT_DEF[i] > 1) PORT_DEF[i] = 1;
 	}
 }
-
 // Write the default port state settings from the PORT_DEF array in RAM
 static inline void EEPROM_Write_Port_Defaults(void) {
 	for(uint8_t i = 0; i < PORT_CNT; i++) {
@@ -414,19 +412,12 @@ static inline void EEPROM_Write_Port_Defaults(void) {
 static inline void EEPROM_Read_REF_V(void) {
 	REF_V = eeprom_read_float((float*)(EEPROM_OFFSET_REF_V));
 	// If the value seems out of range (uninitialized), default it to 4.2
-	//float REF_V = 4.227;
 	if (REF_V < 4.0 || REF_V > 4.4 || isnan(REF_V)) REF_V = 4.2;
 }
-
 // Write the reference voltage to EEPROM
-static inline void EEPROM_Write_REF_V(void) {
-	eeprom_update_float((float*)(EEPROM_OFFSET_REF_V), REF_V);
-}
-
-// Write the Port 8 Sense mode to EEPROM
-static inline void EEPROM_Write_P8_Sense(uint8_t mode) {
-	eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_P8_SENSE), mode);
-	PORT8_SENSE = mode;
+static inline void EEPROM_Write_REF_V(float reference) {
+	eeprom_update_float((float*)(EEPROM_OFFSET_REF_V), reference);
+	REF_V = reference;
 }
 
 // Read the stored Port 8 Sense mode
@@ -434,17 +425,21 @@ static inline void EEPROM_Read_P8_Sense(void) {
 	PORT8_SENSE = eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_P8_SENSE));
 	if (PORT8_SENSE < 0 || PORT8_SENSE > 1) PORT8_SENSE = 0;
 }
-
-// Write the PCYCLE_TIME to EEPROM
-static inline void EEPROM_Write_PCycle_Time(uint8_t time) {
-	eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_CYCLE_TIME), time);
-	PCYCLE_TIME = time;
+// Write the Port 8 Sense mode to EEPROM
+static inline void EEPROM_Write_P8_Sense(uint8_t mode) {
+	eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_P8_SENSE), mode);
+	PORT8_SENSE = mode;
 }
 
 // Read PCYCLE_TIME from EEPROM
 static inline void EEPROM_Read_PCycle_Time(void) {
 	PCYCLE_TIME = eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_CYCLE_TIME));
 	if (PCYCLE_TIME < 0 || PCYCLE_TIME > PCYCLE_MAX_TIME) PCYCLE_TIME = 1; 
+}
+// Write the PCYCLE_TIME to EEPROM
+static inline void EEPROM_Write_PCycle_Time(uint8_t time) {
+	eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_CYCLE_TIME), time);
+	PCYCLE_TIME = time;
 }
 
 // Read the stored port name

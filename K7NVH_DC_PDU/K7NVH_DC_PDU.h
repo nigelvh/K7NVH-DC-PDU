@@ -67,7 +67,9 @@
 #define LED2 PD5
 
 // Limits
-#define PCYCLE_MAX_TIME 30
+#define PCYCLE_MAX_TIME 30 // Seconds
+#define VREF_MAX 4400 // 4.4V * 1000
+#define VREF_MIN 4000 // 4.0V * 1000
 
 // EEPROM Offsets
 #define EEPROM_OFFSET_PORT_DEFAULTS 0 // Eight bytes at offset 0
@@ -96,6 +98,7 @@ typedef uint8_t pd_set; // Port Descriptor Set - bitmap of ports
 static FILE USBSerialStream;
 
 // Reused strings
+const char STR_Unrecognized[] PROGMEM = "\r\nUNRECOGNIZED COMMAND";
 const char STR_NR_Port[] PROGMEM = "\r\nPORT ";
 const char STR_Enabled[] PROGMEM = "ENABLED";
 const char STR_Disabled[] PROGMEM = "DISABLED";
@@ -165,7 +168,7 @@ static inline uint8_t PORT_CTL(uint8_t port, uint8_t state);
 static inline void EEPROM_Read_Port_Defaults(void);
 static inline void EEPROM_Write_Port_Defaults(void);
 static inline void EEPROM_Read_REF_V(void);
-static inline void EEPROM_Write_REF_V(void);
+static inline void EEPROM_Write_REF_V(float reference);
 static inline void EEPROM_Read_P8_Sense(void);
 static inline void EEPROM_Write_P8_Sense(uint8_t mode);
 static inline void EEPROM_Read_PCycle_Time(void);
