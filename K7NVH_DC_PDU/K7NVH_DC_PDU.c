@@ -21,10 +21,6 @@ int main(void) {
 	STEP_V = REF_V / 1024;
 	int16_t BYTE_IN = -1;
 
-	for(uint8_t i = 0; i < DATA_BUFF_LEN; i++) {
-		DATA_IN[i] = 0;
-	}
-
 	// Disable watchdog if enabled by bootloader/fuses
 	MCUSR &= ~(1 << WDRF);
 	wdt_disable();
@@ -42,7 +38,8 @@ int main(void) {
 
 	run_lufa();
 
-	for(uint16_t i = 0; i < 500; i++) {
+	// Wait 5 seconds so that we can open a console to catch startup messages
+	for (uint16_t i = 0; i < 500; i++) {
 		_delay_ms(10);
 	}
 
@@ -85,7 +82,7 @@ int main(void) {
 // ~~ Main system loop
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-	for(;;) {
+	for (;;) {
 		// Read a byte from the USB serial stream
 		BYTE_IN = CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface);
 
@@ -101,7 +98,7 @@ int main(void) {
 			fputc(BYTE_IN, &USBSerialStream);
 
 			// Switch on the input byte to determine what is is and what to do.
-			switch(BYTE_IN) {
+			switch (BYTE_IN) {
 				case 8:
 				case 127:
 					// Handle Backspace chars.
@@ -202,7 +199,7 @@ static inline void INPUT_Parse(void) {
 	// Turn off a port or a list of ports
 	if (strncmp_P(DATA_IN, PSTR("POFF"), 4) == 0) {
 		INPUT_Parse_args(&pd, DATA_IN + 4);
-		for(uint8_t i = 0; i < PORT_CNT; i++) {
+		for (uint8_t i = 0; i < PORT_CNT; i++) {
 			if (pd & (1 << i)) {
 				PORT_CTL(i, 0);
 				printPGMStr(STR_NR_Port);
@@ -215,7 +212,7 @@ static inline void INPUT_Parse(void) {
 	// Power cycle a port or list of ports. Time is defined by PCYCLE_TIME.
 	if (strncmp_P(DATA_IN, PSTR("PCYCLE"), 6) == 0) {
 		INPUT_Parse_args(&pd, DATA_IN + 6);
-		for(uint8_t i = 0; i < PORT_CNT; i++) {
+		for (uint8_t i = 0; i < PORT_CNT; i++) {
 			if (pd & (1 << i)) {
 				PORT_CTL(i, 0);
 				printPGMStr(STR_NR_Port);
@@ -223,11 +220,11 @@ static inline void INPUT_Parse(void) {
 				printPGMStr(STR_Disabled);
 			}
 		}
-		for(uint16_t i = 0; i < (PCYCLE_TIME * 10); i++) {
+		for (uint16_t i = 0; i < (PCYCLE_TIME * 10); i++) {
 			_delay_ms(100);
 			run_lufa();
 		}
-		for(uint8_t i = 0; i < PORT_CNT; i++) {
+		for (uint8_t i = 0; i < PORT_CNT; i++) {
 			if (pd & (1 << i)) {
 				PORT_CTL(i, 1);
 				printPGMStr(STR_NR_Port);
@@ -264,7 +261,7 @@ static inline void INPUT_Parse(void) {
 	// Set a port or list of ports default state at startup to OFF
 	if (strncmp_P(DATA_IN, PSTR("PDEFOFF"), 7) == 0) {
 		INPUT_Parse_args(&pd, DATA_IN + 7);
-		for(uint8_t i = 0; i < PORT_CNT; i++) {
+		for (uint8_t i = 0; i < PORT_CNT; i++) {
 			if (pd & (1 << i)) {
 				PORT_DEF[i] = 0;
 				printPGMStr(STR_Port_Default);
@@ -393,7 +390,7 @@ static inline void LED_CTL(uint8_t led, uint8_t state) {
 
 // Read the default port state settings into the PORT_DEF array in RAM
 static inline void EEPROM_Read_Port_Defaults(void) {
-	for(uint8_t i = 0; i < PORT_CNT; i++) {
+	for (uint8_t i = 0; i < PORT_CNT; i++) {
 		// Update the PORT_DEF array with the values from EEPROM
 		PORT_DEF[i] = eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_PORT_DEFAULTS + i));
 		// If the value is not 0 or 1 (uninitialized), default it to 1
@@ -402,7 +399,7 @@ static inline void EEPROM_Read_Port_Defaults(void) {
 }
 // Write the default port state settings from the PORT_DEF array in RAM
 static inline void EEPROM_Write_Port_Defaults(void) {
-	for(uint8_t i = 0; i < PORT_CNT; i++) {
+	for (uint8_t i = 0; i < PORT_CNT; i++) {
 		// Update the EERPOM with the values from the PORT_DEF array
 		eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_PORT_DEFAULTS + i), PORT_DEF[i]);
 	}
@@ -454,7 +451,7 @@ static inline const char * EEPROM_Read_Port_Name(uint8_t port) {
 static inline void EEPROM_Dump_Vars(void) {
 	// Read port defaults
 	printPGMStr(PSTR("\r\nPORT DEF: "));
-	for(uint8_t i = 0; i < PORT_CNT; i++) {
+	for (uint8_t i = 0; i < PORT_CNT; i++) {
 		fprintf(&USBSerialStream, "%i ", eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_PORT_DEFAULTS + i)));
 	}
 	// Read REF_V
@@ -468,7 +465,7 @@ static inline void EEPROM_Dump_Vars(void) {
 	fprintf(&USBSerialStream, "%iS", eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_CYCLE_TIME)));
 	// Read Port Names
 	printPGMStr(PSTR("\r\nPNAMES: "));
-	for(uint8_t i = 0; i < PORT_CNT; i++) {
+	for (uint8_t i = 0; i < PORT_CNT; i++) {
 		char working[16];
 		eeprom_read_block((void*)working, (const void*)EEPROM_OFFSET_P0NAME+(i*16), 16);
 		fprintf(&USBSerialStream, "%s ", working);
