@@ -157,7 +157,7 @@ void INPUT_Parse_args(pd_set *pd, char *str) {
 		if (*str >= '1' && *str <= '8') {
 			*pd = *pd | (1 << (*str - '1'));
 		} else if (*str == 'A' || *str == 'a') {
-			pd = 0b11111111;
+			*pd = 0b11111111;
 		}
 		str++;
 	}
