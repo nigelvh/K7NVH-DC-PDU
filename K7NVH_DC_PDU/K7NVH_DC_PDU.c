@@ -315,14 +315,24 @@ static inline void INPUT_Parse(void) {
 	}
 	// Set the name for a given port.
 	if (strncmp_P(DATA_IN, PSTR("SETNAME"), 7) == 0) {
-		if (DATA_IN[7] >= '1' && DATA_IN[7] <= '8') {
-			EEPROM_Write_Port_Name(DATA_IN[7] - '1', DATA_IN + 8);
-			printPGMStr(STR_NR_Port);
-			char temp_name[16];
-			EEPROM_Read_Port_Name(DATA_IN[7] - '1', temp_name);
-			fprintf(&USBSerialStream, "%i NAME: %s", DATA_IN[7] - '0', temp_name);
+		char *str = DATA_IN + 7;
+		int8_t portid;
+		char temp_name[16];
+
+		while (*str == ' ' || *str == '\t') str++;
+		if (*str < '1' || *str > '8') {
+			// TODO print syntax error
 			return;
 		}
+		portid = *str - '1';
+		str++;
+		while (*str == ' ' || *str == '\t') str++;
+
+		EEPROM_Write_Port_Name(portid, str);
+		printPGMStr(STR_NR_Port);
+		EEPROM_Read_Port_Name(portid, temp_name);
+		fprintf(&USBSerialStream, "%i NAME: %s", portid + 1, temp_name);
+		return;
 	}
 	
 	// If none of the above commands were recognized, print a generic error.
