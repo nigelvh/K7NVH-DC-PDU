@@ -13,6 +13,7 @@
 #include <util/delay.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <avr/pgmspace.h>
 #include <avr/eeprom.h>
 
@@ -173,7 +174,8 @@ static inline void EEPROM_Read_P8_Sense(void);
 static inline void EEPROM_Write_P8_Sense(uint8_t mode);
 static inline void EEPROM_Read_PCycle_Time(void);
 static inline void EEPROM_Write_PCycle_Time(uint8_t time);
-static inline const char * EEPROM_Read_Port_Name(uint8_t port);
+static inline void EEPROM_Read_Port_Name(uint8_t port, char *str);
+static inline void EEPROM_Write_Port_Name(uint8_t port, char *str);
 static inline void EEPROM_Dump_Vars(void);
 
 static inline float ADC_Read_Current(uint8_t port);

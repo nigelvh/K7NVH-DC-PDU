@@ -1,7 +1,6 @@
 /* (c) 2015 Nigel Vander Houwen */
 //
 // TODO
-// Finish PSETNAME implementation
 // HIGH current safety shutoff
 // Save current limit value/port to EEPROM
 // High water mark stored in EEPROM (Lifetime & User resettable)
@@ -297,6 +296,14 @@ static inline void INPUT_Parse(void) {
 			return;
 		}
 	}
+	// Set the name for a given port.
+	if (strncmp_P(DATA_IN, PSTR("SETNAME"), 7) == 0) {
+		if(DATA_IN[7] >= '1' && DATA_IN[7] <= '8'){
+			EEPROM_Write_Port_Name(DATA_IN[7] - '1', DATA_IN + 8);
+			return;
+		}
+	}
+	
 	// If none of the above commands were recognized, print a generic error.
 	printPGMStr(STR_Unrecognized);
 }
@@ -315,7 +322,9 @@ static inline void PRINT_Status(void) {
 	}
 	for(uint8_t i = 0; i < PORT_CNT; i++) {
 		printPGMStr(STR_NR_Port);
-		fprintf(&USBSerialStream, "%i \"%s\": ", i+1, EEPROM_Read_Port_Name(i));
+		char temp_name[16];
+		EEPROM_Read_Port_Name(i, temp_name);
+		fprintf(&USBSerialStream, "%i \"%s\": ", i+1, temp_name);
 		if (PORT_STATE[i] == 1) { printPGMStr(PSTR("ON")); } else { printPGMStr(PSTR("OFF")); }
 		if (i == 7 && PORT8_SENSE == 1) break;
 		current = ADC_Read_Current(i);
@@ -440,11 +449,36 @@ static inline void EEPROM_Write_PCycle_Time(uint8_t time) {
 }
 
 // Read the stored port name
-static inline const char * EEPROM_Read_Port_Name(uint8_t port) {
-	char working[16];
-	eeprom_read_block((void*)working, (const void*)EEPROM_OFFSET_P0NAME+(port*16), 16);
-	if (working[0] >= 127 || working[0] < 32) { memset(working,0,sizeof(working)); }
-	return working;
+static inline void EEPROM_Read_Port_Name(uint8_t port, char *str) {
+	char working = 0;
+	uint8_t count = 0;
+	
+	while (1) {
+		// Read a byte from the EEPROM
+		working = eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_P0NAME+(port*16)+count));
+		
+		// If we've reached the end of the string, terminate the string, and break.
+		if (working  == 255 || working == 0) {
+			*str = 0;
+			break;
+		}
+		
+		// Take the byte we've read, and attach it to the string
+		*str = working;
+		str++;
+		count++;
+	}
+}
+// Write the port name to EEPROM
+static inline void EEPROM_Write_Port_Name(uint8_t port, char *str) {
+	// While we haven't reached the end of the string, or reached the end of the buffer
+	// Write the name bytes to EEPROM
+	for (uint8_t i = 0; i < 15; i++) {
+		//if (*str == 0) { break; }
+		eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_P0NAME+(port*16)+i), *str);
+		str++;
+	}
+	eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_P0NAME+(port*16)+15), 0);
 }
 
 // Dump all EEPROM variables
@@ -466,9 +500,10 @@ static inline void EEPROM_Dump_Vars(void) {
 	// Read Port Names
 	printPGMStr(PSTR("\r\nPNAMES: "));
 	for (uint8_t i = 0; i < PORT_CNT; i++) {
-		char working[16];
-		eeprom_read_block((void*)working, (const void*)EEPROM_OFFSET_P0NAME+(i*16), 16);
-		fprintf(&USBSerialStream, "%s ", working);
+		for (uint8_t j = 0; j < 16; j++) {
+			fputc(eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_P0NAME+(i*16)+j)), &USBSerialStream);
+		}
+		fputc(' ', &USBSerialStream);
 	}
 }
 
