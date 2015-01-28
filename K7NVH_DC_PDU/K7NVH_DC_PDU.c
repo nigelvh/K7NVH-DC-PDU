@@ -316,6 +316,10 @@ static inline void INPUT_Parse(void) {
 	if (strncmp_P(DATA_IN, PSTR("SETNAME"), 7) == 0) {
 		if(DATA_IN[7] >= '1' && DATA_IN[7] <= '8'){
 			EEPROM_Write_Port_Name(DATA_IN[7] - '1', DATA_IN + 8);
+			printPGMStr(STR_NR_Port);
+			char temp_name[16];
+			EEPROM_Read_Port_Name(DATA_IN[7] - '1', temp_name);
+			fprintf(&USBSerialStream, "%i NAME: %s", DATA_IN[7] - '0', temp_name);
 			return;
 		}
 	}
