@@ -234,8 +234,11 @@ static inline void INPUT_Parse(void) {
 				printPGMStr(STR_Disabled);
 			}
 		}
-		for (uint16_t i = 0; i < (PCYCLE_TIME * 10); i++) {
-			_delay_ms(100);
+		fputs("\r\n", &USBSerialStream);
+		run_lufa();
+		for (uint16_t i = 0; i < (PCYCLE_TIME); i++) {
+			_delay_ms(1000);
+			fputc('.', &USBSerialStream);
 			run_lufa();
 		}
 		for (uint8_t i = 0; i < PORT_CNT; i++) {
