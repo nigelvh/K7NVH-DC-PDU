@@ -260,8 +260,8 @@ static inline void INPUT_Parse(void) {
 		}
 	}
 	// Set a port or list of ports default state at startup to ON
-	if (strncmp_P(DATA_IN, PSTR("PDEFON"), 6) == 0) {
-		INPUT_Parse_args(&pd, DATA_IN + 6);
+	if (strncmp_P(DATA_IN, PSTR("SETDEFON"), 8) == 0) {
+		INPUT_Parse_args(&pd, DATA_IN + 8);
 		for (uint8_t i = 0; i < PORT_CNT; i++) {
 			if (pd & (1 << i)) {
 				PORT_DEF[i] = 1;
@@ -274,8 +274,8 @@ static inline void INPUT_Parse(void) {
 		return;
 	}
 	// Set a port or list of ports default state at startup to OFF
-	if (strncmp_P(DATA_IN, PSTR("PDEFOFF"), 7) == 0) {
-		INPUT_Parse_args(&pd, DATA_IN + 7);
+	if (strncmp_P(DATA_IN, PSTR("SETDEFOFF"), 9) == 0) {
+		INPUT_Parse_args(&pd, DATA_IN + 9);
 		for (uint8_t i = 0; i < PORT_CNT; i++) {
 			if (pd & (1 << i)) {
 				PORT_DEF[i] = 0;
@@ -287,19 +287,20 @@ static inline void INPUT_Parse(void) {
 		EEPROM_Write_Port_Defaults();
 		return;
 	}
-	// Set the Port 8 Sense mode to VOLTAGE
-	if (strncmp_P(DATA_IN, PSTR("P8SENSEV"), 8) == 0) {
-		EEPROM_Write_P8_Sense(1);
-		printPGMStr(STR_Port_8_Sense);
-		printPGMStr(PSTR("VOLTAGE"));
-		return;
-	}
-	// Set the Port 8 Sense mode to CURRENT
-	if (strncmp_P(DATA_IN, PSTR("P8SENSEI"), 8) == 0) {
-		EEPROM_Write_P8_Sense(0);
-		printPGMStr(STR_Port_8_Sense);
-		printPGMStr(PSTR("CURRENT"));
-		return;
+	// Set the Port 8 Sense mode
+	if (strncmp_P(DATA_IN, PSTR("SETSENSE"), 8) == 0) {
+		if (DATA_IN[8] == 'V') {
+			EEPROM_Write_P8_Sense(1);
+			printPGMStr(STR_Port_8_Sense);
+			printPGMStr(PSTR("VOLTAGE"));
+			return;
+		}
+		if (DATA_IN[8] == 'I') {
+			EEPROM_Write_P8_Sense(0);
+			printPGMStr(STR_Port_8_Sense);
+			printPGMStr(PSTR("CURRENT"));
+			return;
+		}
 	}
 	// Set the VREF voltage and store in EEPROM to correct voltage readings.
 	if (strncmp_P(DATA_IN, PSTR("SETVREF"), 7) == 0) {
@@ -314,7 +315,7 @@ static inline void INPUT_Parse(void) {
 	}
 	// Set the name for a given port.
 	if (strncmp_P(DATA_IN, PSTR("SETNAME"), 7) == 0) {
-		if(DATA_IN[7] >= '1' && DATA_IN[7] <= '8'){
+		if (DATA_IN[7] >= '1' && DATA_IN[7] <= '8') {
 			EEPROM_Write_Port_Name(DATA_IN[7] - '1', DATA_IN + 8);
 			printPGMStr(STR_NR_Port);
 			char temp_name[16];
