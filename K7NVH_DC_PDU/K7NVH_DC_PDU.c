@@ -66,11 +66,12 @@ int main(void) {
 	printPGMStr(STR_Port_Init);
 	for(uint8_t i = 0; i < PORT_CNT; i++) {
 		PORT_CTL(i, PORT_DEF[i]);
-		fprintf(&USBSerialStream, "P%i", i+1);
+		printPGMStr(STR_NR_Port);
+		fprintf(&USBSerialStream, "%i ", i+1);
 		if (PORT_DEF[i]) {
-			printPGMStr(PSTR(" ON\r\n"));
+			printPGMStr(STR_Enabled);
 		} else {
-			printPGMStr(PSTR(" OFF\r\n"));
+			printPGMStr(STR_Disabled);
 		}
 		run_lufa();
 	}
@@ -101,8 +102,11 @@ int main(void) {
 				case 8:
 				case 127:
 					// Handle Backspace chars.
-					if (DATA_IN_POS > 0) DATA_IN_POS--;
-					DATA_IN[DATA_IN_POS] = 0;
+					if (DATA_IN_POS > 0){
+						DATA_IN_POS--;
+						DATA_IN[DATA_IN_POS] = 0;
+						printPGMStr(STR_Backspace);
+					}
 					break;
 
 				case '\n':
@@ -150,7 +154,13 @@ static inline void INPUT_Clear(void) {
 		DATA_IN[i] = 0;
 	}
 	DATA_IN_POS = 0;
+#ifdef ENABLECOLORS
+			printPGMStr(STR_Color_Cyan);
+#endif
 	printPGMStr(PSTR("\r\n\r\n> "));
+#ifdef ENABLECOLORS
+			printPGMStr(STR_Color_Reset);
+#endif
 }
 
 // Parse command arguments and return pd_set bitmap with relevant port
@@ -185,6 +195,7 @@ static inline void INPUT_Parse(void) {
 	// Turn on a port or list of ports
 	if (strncmp_P(DATA_IN, PSTR("PON"), 3) == 0) {
 		INPUT_Parse_args(&pd, DATA_IN + 3);
+
 		for (uint8_t i = 0; i < PORT_CNT; i++) {
 			if (pd & (1 << i)) {
 				PORT_CTL(i, 1);
@@ -193,11 +204,13 @@ static inline void INPUT_Parse(void) {
 				printPGMStr(STR_Enabled);
 			}
 		}
+
 		return;
 	}
 	// Turn off a port or a list of ports
 	if (strncmp_P(DATA_IN, PSTR("POFF"), 4) == 0) {
 		INPUT_Parse_args(&pd, DATA_IN + 4);
+
 		for (uint8_t i = 0; i < PORT_CNT; i++) {
 			if (pd & (1 << i)) {
 				PORT_CTL(i, 0);
@@ -206,11 +219,13 @@ static inline void INPUT_Parse(void) {
 				printPGMStr(STR_Disabled);
 			}
 		}
+
 		return;
 	}
 	// Power cycle a port or list of ports. Time is defined by PCYCLE_TIME.
 	if (strncmp_P(DATA_IN, PSTR("PCYCLE"), 6) == 0) {
 		INPUT_Parse_args(&pd, DATA_IN + 6);
+		
 		for (uint8_t i = 0; i < PORT_CNT; i++) {
 			if (pd & (1 << i)) {
 				PORT_CTL(i, 0);
@@ -231,6 +246,7 @@ static inline void INPUT_Parse(void) {
 				printPGMStr(STR_Enabled);
 			}
 		}
+		
 		return;
 	}
 	// Set PCYCLE_TIME and store in EEPROM
@@ -325,7 +341,7 @@ static inline void PRINT_Status(void) {
 		char temp_name[16];
 		EEPROM_Read_Port_Name(i, temp_name);
 		fprintf(&USBSerialStream, "%i \"%s\": ", i+1, temp_name);
-		if (PORT_STATE[i] == 1) { printPGMStr(PSTR("ON")); } else { printPGMStr(PSTR("OFF")); }
+		if (PORT_STATE[i] == 1) { printPGMStr(STR_Enabled); } else { printPGMStr(STR_Disabled); }
 		if (i == 7 && PORT8_SENSE == 1) break;
 		current = ADC_Read_Current(i);
 		printPGMStr(PSTR(". Current: "));

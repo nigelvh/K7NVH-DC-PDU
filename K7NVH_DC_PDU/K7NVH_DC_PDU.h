@@ -26,6 +26,10 @@
 // ~~ Macros
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+// Enable ANSI color codes to be sent. Uses a small bit of extra program space for 
+// storage of color codes/modified strings.
+#define ENABLECOLORS
+
 #define SOFTWAREVERS "\r\nK7NVH DC PDU V1.0\r\n"
 #define PORT_CNT    8
 #define DATA_BUFF_LEN    32
@@ -99,10 +103,23 @@ typedef uint8_t pd_set; // Port Descriptor Set - bitmap of ports
 static FILE USBSerialStream;
 
 // Reused strings
-const char STR_Unrecognized[] PROGMEM = "\r\nUNRECOGNIZED COMMAND";
+#ifdef ENABLECOLORS
+	const char STR_Color_Red[] PROGMEM = "\x1b[31m";
+	const char STR_Color_Green[] PROGMEM = "\x1b[32m";
+	const char STR_Color_Blue[] PROGMEM = "\x1b[34m";
+	const char STR_Color_Cyan[] PROGMEM = "\x1b[36m";
+	const char STR_Color_Reset[] PROGMEM = "\x1b[0m";
+	const char STR_Unrecognized[] PROGMEM = "\r\n\x1b[31mUNRECOGNIZED COMMAND\x1b[0m";
+	const char STR_Enabled[] PROGMEM = "\x1b[32mENABLED\x1b[0m";
+	const char STR_Disabled[] PROGMEM = "\x1b[31mDISABLED\x1b[0m";
+#else
+	const char STR_Unrecognized[] PROGMEM = "\r\nUNRECOGNIZED COMMAND";
+	const char STR_Enabled[] PROGMEM = "ENABLED";
+	const char STR_Disabled[] PROGMEM = "DISABLED";
+#endif	
+
+const char STR_Backspace[] PROGMEM = "\x1b[D \x1b[D";
 const char STR_NR_Port[] PROGMEM = "\r\nPORT ";
-const char STR_Enabled[] PROGMEM = "ENABLED";
-const char STR_Disabled[] PROGMEM = "DISABLED";
 const char STR_Port_Init[] PROGMEM = "PORT INIT:\r\n";
 const char STR_Port_Default[] PROGMEM = "\r\nPORT DEFAULT ";
 const char STR_Port_8_Sense[] PROGMEM = "\r\nPORT 8 SENSE ";
