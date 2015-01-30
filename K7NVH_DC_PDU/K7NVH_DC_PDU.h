@@ -97,6 +97,10 @@
 
 typedef uint8_t pd_set; // Port Descriptor Set - bitmap of ports
 
+// Port State Set - bitmap of port state
+// (NUL,NUL,NUL,NUL,NUL,NUL,NUL,Enabled/Disabled)
+typedef uint8_t ps_set; 
+
 // Standard file stream for the CDC interface when set up, so that the
 // virtual CDC COM port can be used like any regular character stream
 // in the C APIs.
@@ -104,25 +108,29 @@ static FILE USBSerialStream;
 
 // Reused strings
 #ifdef ENABLECOLORS
-	const char STR_Color_Red[] PROGMEM = "\x1b[31m";
-	const char STR_Color_Green[] PROGMEM = "\x1b[32m";
-	const char STR_Color_Blue[] PROGMEM = "\x1b[34m";
-	const char STR_Color_Cyan[] PROGMEM = "\x1b[36m";
-	const char STR_Color_Reset[] PROGMEM = "\x1b[0m";
-	const char STR_Unrecognized[] PROGMEM = "\r\n\x1b[31mUNRECOGNIZED COMMAND\x1b[0m";
+//	const char STR_Color_Red[] PROGMEM = "\x1b[31m";
+//	const char STR_Color_Green[] PROGMEM = "\x1b[32m";
+//	const char STR_Color_Blue[] PROGMEM = "\x1b[34m";
+//	const char STR_Color_Cyan[] PROGMEM = "\x1b[36m";
+//	const char STR_Color_Reset[] PROGMEM = "\x1b[0m";
+	const char STR_Unrecognized[] PROGMEM = "\r\n\x1b[31mINVALID COMMAND\x1b[0m";
 	const char STR_Enabled[] PROGMEM = "\x1b[32mENABLED\x1b[0m";
 	const char STR_Disabled[] PROGMEM = "\x1b[31mDISABLED\x1b[0m";
+	const char STR_Overload[] PROGMEM = "\r\n\x1b[31m!OVERLOAD!\x1b[0m";
+	const char STR_Prompt[] PROGMEM = "\r\n\r\n\x1b[36m>\x1b[0m ";
 #else
-	const char STR_Unrecognized[] PROGMEM = "\r\nUNRECOGNIZED COMMAND";
+	const char STR_Unrecognized[] PROGMEM = "\r\nINVALID COMMAND";
 	const char STR_Enabled[] PROGMEM = "ENABLED";
 	const char STR_Disabled[] PROGMEM = "DISABLED";
+	const char STR_Overload[] PROGMEM = "\r\n!OVERLOAD!";
+	const char STR_Prompt[] PROGMEM = "\r\n\r\n> ";
 #endif	
 
 const char STR_Backspace[] PROGMEM = "\x1b[D \x1b[D";
 const char STR_NR_Port[] PROGMEM = "\r\nPORT ";
-const char STR_Port_Init[] PROGMEM = "PORT INIT:\r\n";
 const char STR_Port_Default[] PROGMEM = "\r\nPORT DEFAULT ";
 const char STR_Port_8_Sense[] PROGMEM = "\r\nPORT 8 SENSE ";
+const char STR_PCYCLE_Time[] PROGMEM = "\r\nPCYCLE TIME: ";
 
 // Variables stored in EEPROM
 uint8_t PORT_DEF[PORT_CNT]; // Default state for the ports
@@ -140,7 +148,7 @@ const uint8_t ADC_Ports[PORT_CNT] = \
 float STEP_V = 0; // Will be set at startup.
 
 // State Variables
-uint8_t PORT_STATE[PORT_CNT];
+ps_set PORT_STATE[PORT_CNT];
 char DATA_IN[DATA_BUFF_LEN];
 uint8_t DATA_IN_POS = 0;
 
@@ -184,7 +192,7 @@ static inline void SPI_setDataMode(uint8_t mode);
 static inline void SPI_setClockDivider(uint8_t rate);
 
 static inline void LED_CTL(uint8_t led, uint8_t state);
-static inline uint8_t PORT_CTL(uint8_t port, uint8_t state);
+static inline void PORT_CTL(uint8_t port, uint8_t state);
 static inline void PORT_Set_Ctl(pd_set *pd, uint8_t state);
 static inline uint8_t PORT_Check_Current_Limit(uint8_t port);
 

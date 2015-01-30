@@ -46,16 +46,8 @@ int main(void) {
 	printPGMStr(PSTR(SOFTWAREVERS));
 	run_lufa();
 
-	// Set up SPI pins
-	DDRB |= (1 << SPI_SS)|(1 << SPI_SCK)|(1 << SPI_MOSI);
-	PORTB |= (1 << SPI_SS);
-	PORTB &= ~(1 << SPI_SCK);
-
 	// Start up SPI
 	SPI_begin();
-	SPI_setClockDivider(SPI_CLOCK_DIV128);
-	SPI_setDataMode(SPI_MODE0);
-	SPI_setBitOrder(1);
 
 	// Set up control pins
 	DDRB |= (1 << P1EN)|(1 << P2EN)|(1 << P3EN)|(1 << P4EN);
@@ -63,16 +55,8 @@ int main(void) {
 	DDRD |= (1 << LED1)|(1 << LED2);
 
 	// Enable/Disable ports per their defaults
-	printPGMStr(STR_Port_Init);
 	for(uint8_t i = 0; i < PORT_CNT; i++) {
 		PORT_CTL(i, PORT_DEF[i]);
-		printPGMStr(STR_NR_Port);
-		fprintf(&USBSerialStream, "%i ", i+1);
-		if (PORT_DEF[i]) {
-			printPGMStr(STR_Enabled);
-		} else {
-			printPGMStr(STR_Disabled);
-		}
 		run_lufa();
 	}
 
@@ -91,7 +75,7 @@ int main(void) {
 			// We've gotten a char, so lets blink the green LED onboard. This LED will 
 			// remain lit while the board is processing commands. This is most evident 
 			// during a PCYCLE.
-			LED_CTL(1, 1);
+			LED_CTL(0, 1);
 			
 			// Echo the char we just received back out the serial stream so the user's 
 			// console will display it.
@@ -137,7 +121,7 @@ int main(void) {
 		}
 
 		// Turn the green LED back off again
-		LED_CTL(1, 0);
+		LED_CTL(0, 0);
 		
 		// Check for above threshold current usage
 		for (uint8_t i = 0; i < 8; i++) {
@@ -146,14 +130,12 @@ int main(void) {
 				// we're not just seeing inrush current.
 				_delay_ms(10);
 				if (PORT_Check_Current_Limit(i)) {
+					// Print a warning message.
+					printPGMStr(STR_Overload);
+					
 					// Disable the port
 					PORT_CTL(i, 0);
 				
-					// Print a warning message.
-					printPGMStr(STR_Color_Red);
-					printPGMStr(PSTR("\r\n!OVERLOAD! PORT "));
-					fprintf(&USBSerialStream, "%i ", i+1);
-					printPGMStr(STR_Disabled);
 					INPUT_Clear();
 				}
 			}
@@ -170,17 +152,9 @@ int main(void) {
 
 // Flush out our data input buffer, reset our position variable, and print a new prompt.
 static inline void INPUT_Clear(void) {
-	for (uint8_t i = 0; i < DATA_BUFF_LEN; i++) {
-		DATA_IN[i] = 0;
-	}
+	memset(&DATA_IN[0], 0, sizeof(DATA_IN));
 	DATA_IN_POS = 0;
-#ifdef ENABLECOLORS
-			printPGMStr(STR_Color_Cyan);
-#endif
-	printPGMStr(PSTR("\r\n\r\n> "));
-#ifdef ENABLECOLORS
-			printPGMStr(STR_Color_Reset);
-#endif
+	printPGMStr(STR_Prompt);
 }
 
 // Parse command arguments and return pd_set bitmap with relevant port
@@ -215,17 +189,13 @@ static inline void INPUT_Parse(void) {
 	// Turn on a port or list of ports
 	if (strncmp_P(DATA_IN, PSTR("PON"), 3) == 0) {
 		INPUT_Parse_args(&pd, DATA_IN + 3);
-
 		PORT_Set_Ctl(&pd, 1);
-
 		return;
 	}
 	// Turn off a port or a list of ports
 	if (strncmp_P(DATA_IN, PSTR("POFF"), 4) == 0) {
 		INPUT_Parse_args(&pd, DATA_IN + 4);
-
 		PORT_Set_Ctl(&pd, 0);
-
 		return;
 	}
 	// Power cycle a port or list of ports. Time is defined by PCYCLE_TIME.
@@ -234,7 +204,7 @@ static inline void INPUT_Parse(void) {
 		
 		PORT_Set_Ctl(&pd, 0);
 
-		fputs("\r\n", &USBSerialStream);
+		fprintf(&USBSerialStream, "\r\n");
 		run_lufa();
 		for (uint16_t i = 0; i < (PCYCLE_TIME); i++) {
 			_delay_ms(1000);
@@ -250,7 +220,7 @@ static inline void INPUT_Parse(void) {
 	if (strncmp_P(DATA_IN, PSTR("SETPCYCLE"), 9) == 0) {
 		uint16_t temp_set_time = atoi(DATA_IN + 9);
 		if (temp_set_time <= PCYCLE_MAX_TIME) {
-			printPGMStr(PSTR("\r\nPCYCLE TIME: "));
+			printPGMStr(STR_PCYCLE_Time);
 			fprintf(&USBSerialStream, "%i", temp_set_time);
 			EEPROM_Write_PCycle_Time((uint8_t)temp_set_time);
 			return;
@@ -262,9 +232,6 @@ static inline void INPUT_Parse(void) {
 		for (uint8_t i = 0; i < PORT_CNT; i++) {
 			if (pd & (1 << i)) {
 				PORT_DEF[i] = 1;
-				printPGMStr(STR_Port_Default);
-				fprintf(&USBSerialStream, "%i ", i+1);
-				printPGMStr(STR_Enabled);
 			}
 		}
 		EEPROM_Write_Port_Defaults();
@@ -276,9 +243,6 @@ static inline void INPUT_Parse(void) {
 		for (uint8_t i = 0; i < PORT_CNT; i++) {
 			if (pd & (1 << i)) {
 				PORT_DEF[i] = 0;
-				printPGMStr(STR_Port_Default);
-				fprintf(&USBSerialStream, "%i ", i+1);
-				printPGMStr(STR_Disabled);
 			}
 		}
 		EEPROM_Write_Port_Defaults();
@@ -353,7 +317,7 @@ static inline void PRINT_Status(void) {
 		char temp_name[16];
 		EEPROM_Read_Port_Name(i, temp_name);
 		fprintf(&USBSerialStream, "%i \"%s\": ", i+1, temp_name);
-		if (PORT_STATE[i] == 1) { printPGMStr(STR_Enabled); } else { printPGMStr(STR_Disabled); }
+		if (PORT_STATE[i] &= 1) { printPGMStr(STR_Enabled); } else { printPGMStr(STR_Disabled); }
 		if (i == 7 && PORT8_SENSE == 1) break;
 		current = ADC_Read_Current(i);
 		printPGMStr(PSTR(". Current: "));
@@ -380,56 +344,41 @@ static inline void PORT_Set_Ctl(pd_set *pd, uint8_t state) {
 	for (uint8_t i = 0; i < PORT_CNT; i++) {
 		if (*pd & (1 << i)) {
 			PORT_CTL(i, state);
-			printPGMStr(STR_NR_Port);
-			fprintf(&USBSerialStream, "%i ", i+1);
-			printPGMStr(state ? STR_Enabled : STR_Disabled);
 		}
 	}
 }
 
 // Turn a port ON (state == 1) or OFF (state == 0)
-static inline uint8_t PORT_CTL(uint8_t port, uint8_t state) {
-	// If state isn't on or off, or the port isn't a valid number, return error
-	if (state != 0 && state != 1) return 1;
-	if (port < 0 || port > 7) return 1;
+static inline void PORT_CTL(uint8_t port, uint8_t state) {
+	printPGMStr(STR_NR_Port);
+	fprintf(&USBSerialStream, "%i ", port+1);
 
-	// Ports 0 through 3
-	if (port >= 0 && port <= 3) {
-		if (state == 1) {
+	if (state == 1) {
+		if (port <= 3) {
 			PORTB |= (1 << (4 + port));
-		} else {
-			PORTB &= ~(1 << (4 + port));
-		}
-		// Ports 4 through 7
-	} else {
-		if (state == 1) {
+		} else if (port <= 7) {
 			PORTC |= (1 << (11 - port));
-		} else {
+		}
+		printPGMStr(STR_Enabled);
+		PORT_STATE[port] |= 0b00000001;
+	} else {
+		if (port <= 3) {
+			PORTB &= ~(1 << (4 + port));
+		} else if (port <= 7) {
 			PORTC &= ~(1 << (11 - port));
 		}
+		printPGMStr(STR_Disabled);
+		PORT_STATE[port] &= 0b11111110;
 	}
-
-	// Update our port state array
-	PORT_STATE[port] = state;
-
-	return 0;
 }
 
 // Turn a LED ON (state == 1) or OFF (state == 0)
-// LED 1 == Green, LED 0 == Red
+// LED 0 == Green, LED 1 == Red
 static inline void LED_CTL(uint8_t led, uint8_t state) {
-	if (led == 1) {
-		if (state == 1) {
-			PORTD |= (1 << LED1);
-		} else {
-			PORTD &= ~(1 << LED1);
-		}
+	if (state == 1) {
+		PORTD |= (1 << (LED1 + led));
 	} else {
-		if (state == 1) {
-			PORTD |= (1 << LED2);
-		} else {
-			PORTD &= ~(1 << LED2);
-		}
+		PORTD &= ~(1 << (LED1 + led));
 	}
 }
 
@@ -465,6 +414,9 @@ static inline void EEPROM_Write_Port_Defaults(void) {
 	for (uint8_t i = 0; i < PORT_CNT; i++) {
 		// Update the EERPOM with the values from the PORT_DEF array
 		eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_PORT_DEFAULTS + i), PORT_DEF[i]);
+		printPGMStr(STR_Port_Default);
+		fprintf(&USBSerialStream, "%i ", i+1);
+		printPGMStr(PORT_DEF[i] ? STR_Enabled : STR_Disabled);
 	}
 }
 
@@ -538,7 +490,7 @@ static inline void EEPROM_Write_Port_Name(uint8_t port, char *str) {
 // Dump all EEPROM variables
 static inline void EEPROM_Dump_Vars(void) {
 	// Read port defaults
-	printPGMStr(PSTR("\r\nPORT DEF: "));
+	printPGMStr(STR_Port_Default);
 	for (uint8_t i = 0; i < PORT_CNT; i++) {
 		fprintf(&USBSerialStream, "%i ", eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_PORT_DEFAULTS + i)));
 	}
@@ -549,7 +501,7 @@ static inline void EEPROM_Dump_Vars(void) {
 	printPGMStr(PSTR("\r\nP8SENSE: "));
 	fprintf(&USBSerialStream, "%i", eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_P8_SENSE)));
 	// Read Port Cycle Time
-	printPGMStr(PSTR("\r\nPCYCLE: "));
+	printPGMStr(STR_PCYCLE_Time);
 	fprintf(&USBSerialStream, "%iS", eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_CYCLE_TIME)));
 	// Read Port Names
 	printPGMStr(PSTR("\r\nPNAMES: "));
@@ -596,13 +548,19 @@ static inline uint16_t ADC_Read_Raw(uint8_t port) {
 
 // Set up the SPI registers to enable the SPI hardware
 static inline void SPI_begin(void) {
-	// Set SS to high so a connected chip will be "deselected" by default
-	// Set SS to output
+	// Set up SPI pins
+	DDRB |= (1 << SPI_SS)|(1 << SPI_SCK)|(1 << SPI_MOSI);
+	PORTB |= (1 << SPI_SS);
+	PORTB &= ~(1 << SPI_SCK);
 
+	// Enable SPI Master bit in the register
 	SPCR |= _BV(MSTR);
 	SPCR |= _BV(SPE);
 
-	// Set output for SCK and MOSI pin
+	// Set our mode options
+	SPI_setClockDivider(SPI_CLOCK_DIV128);
+	SPI_setDataMode(SPI_MODE0);
+	SPI_setBitOrder(1);
 }
 
 // Disable the SPI hardware
