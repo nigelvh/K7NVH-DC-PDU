@@ -139,6 +139,26 @@ int main(void) {
 		// Turn the green LED back off again
 		LED_CTL(1, 0);
 		
+		// Check for above threshold current usage
+		for (uint8_t i = 0; i < 8; i++) {
+			if (PORT_Check_Current_Limit(i)) {
+				// Current is above threshold. Double check a moment later to make sure
+				// we're not just seeing inrush current.
+				_delay_ms(10);
+				if (PORT_Check_Current_Limit(i)) {
+					// Disable the port
+					PORT_CTL(i, 0);
+				
+					// Print a warning message.
+					printPGMStr(STR_Color_Red);
+					printPGMStr(PSTR("\r\n!OVERLOAD! PORT "));
+					fprintf(&USBSerialStream, "%i ", i+1);
+					printPGMStr(STR_Disabled);
+					INPUT_Clear();
+				}
+			}
+		}
+		
 		// Keep the LUFA USB stuff fed regularly.
 		run_lufa();
 	}
@@ -411,6 +431,20 @@ static inline void LED_CTL(uint8_t led, uint8_t state) {
 			PORTD &= ~(1 << LED2);
 		}
 	}
+}
+
+// Checks a port against the stored current limit. Returns 0 if below limits, and 1 if
+// the port has exceeded current limits.
+static inline uint8_t PORT_Check_Current_Limit(uint8_t port){
+	// If we were asked for port 8, but we're sensing voltage, we don't know what the
+	// current flow is. Return 0.
+	if (port == 7 && PORT8_SENSE == 1) { return 0; }
+	
+	// Check for above threshold current flow, and return 1.
+	if (ADC_Read_Current(port) > ((float)PORT_CURRENT_LIMIT[port] / 10.0)) { return 1; }
+	
+	// Else return 0;
+	return 0;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

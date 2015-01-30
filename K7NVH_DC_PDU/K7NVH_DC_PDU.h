@@ -126,10 +126,13 @@ const char STR_Port_8_Sense[] PROGMEM = "\r\nPORT 8 SENSE ";
 
 // Variables stored in EEPROM
 uint8_t PORT_DEF[PORT_CNT]; // Default state for the ports
-float REF_V;
+float REF_V; // Stores as volts
 uint8_t PORT8_SENSE; // 0 = Current, 1 = Voltage
 uint8_t PCYCLE_TIME; // Seconds
- 
+
+// Variables TO BE stored in EEPROM
+uint8_t PORT_CURRENT_LIMIT[PORT_CNT] = {10,10,10,10,10,10,10,10}; // Stored as amps*10 so 50==5.0A
+
 // Port to ADC Address look up table
 const uint8_t ADC_Ports[PORT_CNT] = \
 		{0b10010000, 0b10000000, 0b10110000, 0b10100000, \
@@ -183,6 +186,7 @@ static inline void SPI_setClockDivider(uint8_t rate);
 static inline void LED_CTL(uint8_t led, uint8_t state);
 static inline uint8_t PORT_CTL(uint8_t port, uint8_t state);
 static inline void PORT_Set_Ctl(pd_set *pd, uint8_t state);
+static inline uint8_t PORT_Check_Current_Limit(uint8_t port);
 
 static inline void EEPROM_Read_Port_Defaults(void);
 static inline void EEPROM_Write_Port_Defaults(void);
