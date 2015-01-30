@@ -196,14 +196,7 @@ static inline void INPUT_Parse(void) {
 	if (strncmp_P(DATA_IN, PSTR("PON"), 3) == 0) {
 		INPUT_Parse_args(&pd, DATA_IN + 3);
 
-		for (uint8_t i = 0; i < PORT_CNT; i++) {
-			if (pd & (1 << i)) {
-				PORT_CTL(i, 1);
-				printPGMStr(STR_NR_Port);
-				fprintf(&USBSerialStream, "%i ", i+1);
-				printPGMStr(STR_Enabled);
-			}
-		}
+		PORT_Set_Ctl(&pd, 1);
 
 		return;
 	}
@@ -211,14 +204,7 @@ static inline void INPUT_Parse(void) {
 	if (strncmp_P(DATA_IN, PSTR("POFF"), 4) == 0) {
 		INPUT_Parse_args(&pd, DATA_IN + 4);
 
-		for (uint8_t i = 0; i < PORT_CNT; i++) {
-			if (pd & (1 << i)) {
-				PORT_CTL(i, 0);
-				printPGMStr(STR_NR_Port);
-				fprintf(&USBSerialStream, "%i ", i+1);
-				printPGMStr(STR_Disabled);
-			}
-		}
+		PORT_Set_Ctl(&pd, 0);
 
 		return;
 	}
@@ -226,14 +212,8 @@ static inline void INPUT_Parse(void) {
 	if (strncmp_P(DATA_IN, PSTR("PCYCLE"), 6) == 0) {
 		INPUT_Parse_args(&pd, DATA_IN + 6);
 		
-		for (uint8_t i = 0; i < PORT_CNT; i++) {
-			if (pd & (1 << i)) {
-				PORT_CTL(i, 0);
-				printPGMStr(STR_NR_Port);
-				fprintf(&USBSerialStream, "%i ", i+1);
-				printPGMStr(STR_Disabled);
-			}
-		}
+		PORT_Set_Ctl(&pd, 0);
+
 		fputs("\r\n", &USBSerialStream);
 		run_lufa();
 		for (uint16_t i = 0; i < (PCYCLE_TIME); i++) {
@@ -241,14 +221,8 @@ static inline void INPUT_Parse(void) {
 			fputc('.', &USBSerialStream);
 			run_lufa();
 		}
-		for (uint8_t i = 0; i < PORT_CNT; i++) {
-			if (pd & (1 << i)) {
-				PORT_CTL(i, 1);
-				printPGMStr(STR_NR_Port);
-				fprintf(&USBSerialStream, "%i ", i+1);
-				printPGMStr(STR_Enabled);
-			}
-		}
+
+		PORT_Set_Ctl(&pd, 1);
 		
 		return;
 	}
@@ -380,6 +354,18 @@ static inline void printPGMStr(PGM_P s) {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~ Port/LED Control Functions
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// Set all ports in a port descriptor set to a state
+static inline void PORT_Set_Ctl(pd_set *pd, uint8_t state) {
+	for (uint8_t i = 0; i < PORT_CNT; i++) {
+		if (*pd & (1 << i)) {
+			PORT_CTL(i, state);
+			printPGMStr(STR_NR_Port);
+			fprintf(&USBSerialStream, "%i ", i+1);
+			printPGMStr(state ? STR_Enabled : STR_Disabled);
+		}
+	}
+}
 
 // Turn a port ON (state == 1) or OFF (state == 0)
 static inline uint8_t PORT_CTL(uint8_t port, uint8_t state) {

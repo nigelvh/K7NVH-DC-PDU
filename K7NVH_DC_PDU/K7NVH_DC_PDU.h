@@ -182,6 +182,7 @@ static inline void SPI_setClockDivider(uint8_t rate);
 
 static inline void LED_CTL(uint8_t led, uint8_t state);
 static inline uint8_t PORT_CTL(uint8_t port, uint8_t state);
+static inline void PORT_Set_Ctl(pd_set *pd, uint8_t state);
 
 static inline void EEPROM_Read_Port_Defaults(void);
 static inline void EEPROM_Write_Port_Defaults(void);
