@@ -98,7 +98,7 @@
 typedef uint8_t pd_set; // Port Descriptor Set - bitmap of ports
 
 // Port State Set - bitmap of port state
-// (NUL,NUL,NUL,NUL,NUL,NUL,NUL,Enabled/Disabled)
+// (NUL,NUL,NUL,NUL,NUL,NUL,Overload,Enabled/Disabled)
 typedef uint8_t ps_set; 
 
 // Standard file stream for the CDC interface when set up, so that the
@@ -116,13 +116,13 @@ static FILE USBSerialStream;
 	const char STR_Unrecognized[] PROGMEM = "\r\n\x1b[31mINVALID COMMAND\x1b[0m";
 	const char STR_Enabled[] PROGMEM = "\x1b[32mENABLED\x1b[0m";
 	const char STR_Disabled[] PROGMEM = "\x1b[31mDISABLED\x1b[0m";
-	const char STR_Overload[] PROGMEM = "\r\n\x1b[31m!OVERLOAD!\x1b[0m";
+	const char STR_Overload[] PROGMEM = "\x1b[31m!OVERLOAD!\x1b[0m";
 	const char STR_Prompt[] PROGMEM = "\r\n\r\n\x1b[36m>\x1b[0m ";
 #else
 	const char STR_Unrecognized[] PROGMEM = "\r\nINVALID COMMAND";
 	const char STR_Enabled[] PROGMEM = "ENABLED";
 	const char STR_Disabled[] PROGMEM = "DISABLED";
-	const char STR_Overload[] PROGMEM = "\r\n!OVERLOAD!";
+	const char STR_Overload[] PROGMEM = "!OVERLOAD!";
 	const char STR_Prompt[] PROGMEM = "\r\n\r\n> ";
 #endif	
 

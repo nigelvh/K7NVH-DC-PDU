@@ -131,11 +131,15 @@ int main(void) {
 				_delay_ms(10);
 				if (PORT_Check_Current_Limit(i)) {
 					// Print a warning message.
+					fprintf(&USBSerialStream, "\r\n");
 					printPGMStr(STR_Overload);
 					
 					// Disable the port
 					PORT_CTL(i, 0);
 				
+					// Mark the overload bit for this port
+					PORT_STATE[i] |= 0b00000010;
+					
 					INPUT_Clear();
 				}
 			}
@@ -317,15 +321,16 @@ static inline void PRINT_Status(void) {
 		char temp_name[16];
 		EEPROM_Read_Port_Name(i, temp_name);
 		fprintf(&USBSerialStream, "%i \"%s\": ", i+1, temp_name);
-		if (PORT_STATE[i] &= 1) { printPGMStr(STR_Enabled); } else { printPGMStr(STR_Disabled); }
+		if (PORT_STATE[i] & 0b00000001) { printPGMStr(STR_Enabled); } else { printPGMStr(STR_Disabled); }
 		if (i == 7 && PORT8_SENSE == 1) break;
 		current = ADC_Read_Current(i);
 		printPGMStr(PSTR(". Current: "));
-		fprintf(&USBSerialStream, "%.2f", current);
+		fprintf(&USBSerialStream, "%.2fA ", current);
 		if (PORT8_SENSE == 1) {
-			printPGMStr(PSTR("A, Power: "));
-			fprintf(&USBSerialStream, "%.1fW", (voltage * current));
+			printPGMStr(PSTR("Power: "));
+			fprintf(&USBSerialStream, "%.1fW ", (voltage * current));
 		}
+		if (PORT_STATE[i] & 0b00000010) { printPGMStr(STR_Overload); }
 	}
 }
 
@@ -370,6 +375,9 @@ static inline void PORT_CTL(uint8_t port, uint8_t state) {
 		printPGMStr(STR_Disabled);
 		PORT_STATE[port] &= 0b11111110;
 	}
+	
+	// Clear any overload marks since we're manually setting this port
+	PORT_STATE[port] &= 0b11111101;
 }
 
 // Turn a LED ON (state == 1) or OFF (state == 0)
