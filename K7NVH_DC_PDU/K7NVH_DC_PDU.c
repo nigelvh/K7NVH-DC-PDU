@@ -2,7 +2,7 @@
 //
 // TODO
 // High water mark stored in EEPROM (Lifetime & User resettable)
-// Document available commands
+// Port locking?
 
 #include "K7NVH_DC_PDU.h"
 
