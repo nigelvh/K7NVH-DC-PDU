@@ -1,4 +1,4 @@
-; Copyright 2012 Blacklabel Development, Inc.
+; Modified and borrowed from Arduino project.
 
 [Strings]
 DriverPackageDisplayName="K7NVH DC PDU USB Driver"
@@ -15,7 +15,7 @@ ClassGuid={4D36E978-E325-11CE-BFC1-08002BE10318}
 Signature="$Windows NT$"
 Provider=%ManufacturerName%
 DriverPackageDisplayName=%DriverPackageDisplayName%
-DriverVer=02/06/2015,1.0.0.0
+DriverVer=02/06/2015,1.0.0.1
 
 [Manufacturer]
 %ManufacturerName%=DeviceList, NTamd64, NTia64
@@ -28,10 +28,10 @@ DefaultDestDir=12
 %pdu.name%=DriverInstall, USB\VID_03EB&PID_2044
 
 [DeviceList.NTamd64]
-%uno.name%=DriverInstall, USB\VID_03EB&PID_2044
+%pdu.name%=DriverInstall, USB\VID_03EB&PID_2044
 
 [DeviceList.NTia64]
-%uno.name%=DriverInstall, USB\VID_03EB&PID_2044
+%pdu.name%=DriverInstall, USB\VID_03EB&PID_2044
 
 [DriverInstall]
 include=mdmcpq.inf,usb.inf
