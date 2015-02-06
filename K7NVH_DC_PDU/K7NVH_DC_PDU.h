@@ -75,12 +75,22 @@
 #define PCYCLE_MAX_TIME 30 // Seconds
 #define VREF_MAX 4400 // 4.4V * 1000
 #define VREF_MIN 4000 // 4.0V * 1000
+#define LIMIT_MAX 100 // Stored as amps*10 so 50==5.0A
 
 // EEPROM Offsets
 #define EEPROM_OFFSET_PORT_DEFAULTS 0 // Eight bytes at offset 0
 #define EEPROM_OFFSET_REF_V 8 // Four bytes at offset 8
 #define EEPROM_OFFSET_P8_SENSE 12 // One byte at offset 12
 #define EEPROM_OFFSET_CYCLE_TIME 13 // One byte at offset 13
+
+#define EEPROM_OFFSET_P0LIMIT 16 // 1 Byte at offset 16
+#define EEPROM_OFFSET_P1LIMIT 17 // 1 Byte at offset 17
+#define EEPROM_OFFSET_P2LIMIT 18 // 1 Byte at offset 18
+#define EEPROM_OFFSET_P3LIMIT 19 // 1 Byte at offset 19
+#define EEPROM_OFFSET_P4LIMIT 20 // 1 Byte at offset 20
+#define EEPROM_OFFSET_P5LIMIT 21 // 1 Byte at offset 21
+#define EEPROM_OFFSET_P6LIMIT 22 // 1 Byte at offset 22
+#define EEPROM_OFFSET_P7LIMIT 23 // 1 Byte at offset 23
 
 #define EEPROM_OFFSET_P0NAME 64 // 16 bytes at offset 64
 #define EEPROM_OFFSET_P1NAME 80 // 16 bytes at offset 80
@@ -131,15 +141,14 @@ const char STR_NR_Port[] PROGMEM = "\r\nPORT ";
 const char STR_Port_Default[] PROGMEM = "\r\nPORT DEFAULT ";
 const char STR_Port_8_Sense[] PROGMEM = "\r\nPORT 8 SENSE ";
 const char STR_PCYCLE_Time[] PROGMEM = "\r\nPCYCLE TIME: ";
+const char STR_Port_Limit[] PROGMEM = "\r\nPORT LIMIT: ";
+const char STR_VREF[] PROGMEM = "\r\nVREF: ";
 
 // Variables stored in EEPROM
 uint8_t PORT_DEF[PORT_CNT]; // Default state for the ports
 float REF_V; // Stores as volts
 uint8_t PORT8_SENSE; // 0 = Current, 1 = Voltage
 uint8_t PCYCLE_TIME; // Seconds
-
-// Variables TO BE stored in EEPROM
-uint8_t PORT_CURRENT_LIMIT[PORT_CNT] = {10,10,10,10,10,10,10,10}; // Stored as amps*10 so 50==5.0A
 
 // Port to ADC Address look up table
 const uint8_t ADC_Ports[PORT_CNT] = \
@@ -206,6 +215,8 @@ static inline void EEPROM_Read_PCycle_Time(void);
 static inline void EEPROM_Write_PCycle_Time(uint8_t time);
 static inline void EEPROM_Read_Port_Name(uint8_t port, char *str);
 static inline void EEPROM_Write_Port_Name(uint8_t port, char *str);
+static inline uint8_t EEPROM_Read_Port_Limit(uint8_t port);
+static inline void EEPROM_Write_Port_Limit(uint8_t port, uint8_t limit);
 static inline void EEPROM_Dump_Vars(void);
 
 static inline float ADC_Read_Current(uint8_t port);

@@ -1,8 +1,6 @@
 /* (c) 2015 Nigel Vander Houwen */
 //
 // TODO
-// HIGH current safety shutoff
-// Save current limit value/port to EEPROM
 // High water mark stored in EEPROM (Lifetime & User resettable)
 // Document available commands
 
@@ -221,8 +219,8 @@ static inline void INPUT_Parse(void) {
 		return;
 	}
 	// Set PCYCLE_TIME and store in EEPROM
-	if (strncmp_P(DATA_IN, PSTR("SETPCYCLE"), 9) == 0) {
-		uint16_t temp_set_time = atoi(DATA_IN + 9);
+	if (strncmp_P(DATA_IN, PSTR("SETCYCLE"), 8) == 0) {
+		uint16_t temp_set_time = atoi(DATA_IN + 8);
 		if (temp_set_time <= PCYCLE_MAX_TIME) {
 			printPGMStr(STR_PCYCLE_Time);
 			fprintf(&USBSerialStream, "%i", temp_set_time);
@@ -273,7 +271,7 @@ static inline void INPUT_Parse(void) {
 		if (temp_set_vref >= VREF_MIN && temp_set_vref <= VREF_MAX){
 			float temp_vref = (float)temp_set_vref / 1000.0;
 			EEPROM_Write_REF_V(temp_vref);
-			printPGMStr(PSTR("\r\nVREF: "));
+			printPGMStr(STR_VREF);
 			fprintf(&USBSerialStream, "%.3fV", temp_vref);
 			return;
 		}
@@ -281,7 +279,7 @@ static inline void INPUT_Parse(void) {
 	// Set the name for a given port.
 	if (strncmp_P(DATA_IN, PSTR("SETNAME"), 7) == 0) {
 		char *str = DATA_IN + 7;
-		int8_t portid;
+		uint8_t portid;
 		char temp_name[16];
 
 		while (*str == ' ' || *str == '\t') str++;
@@ -298,6 +296,25 @@ static inline void INPUT_Parse(void) {
 		EEPROM_Read_Port_Name(portid, temp_name);
 		fprintf(&USBSerialStream, "%i NAME: %s", portid + 1, temp_name);
 		return;
+	}
+	// Set the current limit for a given port.
+	if (strncmp_P(DATA_IN, PSTR("SETLIMIT"), 8) == 0) {
+		char *str = DATA_IN + 8;
+		uint8_t portid;
+		
+		while (*str == ' ' || *str == '\t') str++;
+		if (*str >= '1' && *str <= '8') {
+			portid = *str - '1';
+			str++;
+		
+			uint16_t temp_set_limit = (atoi(str) / 100);
+			if (temp_set_limit <= LIMIT_MAX){
+				EEPROM_Write_Port_Limit(portid, temp_set_limit);
+				printPGMStr(STR_Port_Limit);
+				fprintf(&USBSerialStream, "%.1fA", (float)temp_set_limit/10);
+				return;
+			}
+		}
 	}
 	
 	// If none of the above commands were recognized, print a generic error.
@@ -398,7 +415,7 @@ static inline uint8_t PORT_Check_Current_Limit(uint8_t port){
 	if (port == 7 && PORT8_SENSE == 1) { return 0; }
 	
 	// Check for above threshold current flow, and return 1.
-	if (ADC_Read_Current(port) > ((float)PORT_CURRENT_LIMIT[port] / 10.0)) { return 1; }
+	if (ADC_Read_Current(port) > ((float)EEPROM_Read_Port_Limit(port) / 10.0)) { return 1; }
 	
 	// Else return 0;
 	return 0;
@@ -495,6 +512,20 @@ static inline void EEPROM_Write_Port_Name(uint8_t port, char *str) {
 	eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_P0NAME+(port*16)+15), 0);
 }
 
+// Stored as amps*10 so 50==5.0A
+static inline uint8_t EEPROM_Read_Port_Limit(uint8_t port) {
+	uint8_t limit = eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_P0LIMIT+(port)));
+	if (limit > LIMIT_MAX) {
+		return LIMIT_MAX;
+	}
+	return limit;
+}
+
+// Stored as amps*10 so 50==5.0A
+static inline void EEPROM_Write_Port_Limit(uint8_t port, uint8_t limit) {
+	eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_P0LIMIT+(port)), limit);
+}
+
 // Dump all EEPROM variables
 static inline void EEPROM_Dump_Vars(void) {
 	// Read port defaults
@@ -503,14 +534,19 @@ static inline void EEPROM_Dump_Vars(void) {
 		fprintf(&USBSerialStream, "%i ", eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_PORT_DEFAULTS + i)));
 	}
 	// Read REF_V
-	printPGMStr(PSTR("\r\nREF_V: "));
+	printPGMStr(STR_VREF);
 	fprintf(&USBSerialStream, "%.2f %.2f", eeprom_read_float((float*)(EEPROM_OFFSET_REF_V)), REF_V);
 	// Read P8_SENSE
-	printPGMStr(PSTR("\r\nP8SENSE: "));
+	printPGMStr(STR_Port_8_Sense);
 	fprintf(&USBSerialStream, "%i", eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_P8_SENSE)));
 	// Read Port Cycle Time
 	printPGMStr(STR_PCYCLE_Time);
 	fprintf(&USBSerialStream, "%iS", eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_CYCLE_TIME)));
+	// Read Port Limits
+	printPGMStr(STR_Port_Limit);
+	for (uint8_t i = 0; i < PORT_CNT; i++) {
+		fprintf(&USBSerialStream, "%i:%i ", eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_P0LIMIT + i)), EEPROM_Read_Port_Limit(i));
+	}
 	// Read Port Names
 	printPGMStr(PSTR("\r\nPNAMES: "));
 	for (uint8_t i = 0; i < PORT_CNT; i++) {
