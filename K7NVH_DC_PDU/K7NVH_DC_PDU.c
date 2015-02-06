@@ -280,19 +280,17 @@ static inline void INPUT_Parse(void) {
 		char temp_name[16];
 
 		while (*str == ' ' || *str == '\t') str++;
-		if (*str < '1' || *str > '8') {
-			// TODO print syntax error
+		if (*str >= '1' && *str <= '8') {
+			portid = *str - '1';
+			str++;
+			while (*str == ' ' || *str == '\t') str++;
+
+			EEPROM_Write_Port_Name(portid, str);
+			printPGMStr(STR_NR_Port);
+			EEPROM_Read_Port_Name(portid, temp_name);
+			fprintf(&USBSerialStream, "%i NAME: %s", portid + 1, temp_name);
 			return;
 		}
-		portid = *str - '1';
-		str++;
-		while (*str == ' ' || *str == '\t') str++;
-
-		EEPROM_Write_Port_Name(portid, str);
-		printPGMStr(STR_NR_Port);
-		EEPROM_Read_Port_Name(portid, temp_name);
-		fprintf(&USBSerialStream, "%i NAME: %s", portid + 1, temp_name);
-		return;
 	}
 	// Set the current limit for a given port.
 	if (strncmp_P(DATA_IN, PSTR("SETLIMIT"), 8) == 0) {
