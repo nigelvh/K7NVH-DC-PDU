@@ -507,7 +507,7 @@ static inline void EEPROM_Write_Port_Name(uint8_t port, char *str) {
 
 // Stored as amps*10 so 50==5.0A
 static inline uint8_t EEPROM_Read_Port_Limit(uint8_t port) {
-	uint8_t limit = eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_P0LIMIT+(port)));
+	uint8_t limit = eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_LIMIT+(port)));
 	if (limit > LIMIT_MAX) {
 		return LIMIT_MAX;
 	}
@@ -515,7 +515,7 @@ static inline uint8_t EEPROM_Read_Port_Limit(uint8_t port) {
 }
 // Stored as amps*10 so 50==5.0A
 static inline void EEPROM_Write_Port_Limit(uint8_t port, uint8_t limit) {
-	eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_P0LIMIT+(port)), limit);
+	eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_LIMIT+(port)), limit);
 }
 
 // Dump all EEPROM variables
@@ -537,7 +537,7 @@ static inline void EEPROM_Dump_Vars(void) {
 	// Read Port Limits
 	printPGMStr(STR_Port_Limit);
 	for (uint8_t i = 0; i < PORT_CNT; i++) {
-		fprintf(&USBSerialStream, "%i:%i ", eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_P0LIMIT + i)), EEPROM_Read_Port_Limit(i));
+		fprintf(&USBSerialStream, "%i:%i ", eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_LIMIT + i)), EEPROM_Read_Port_Limit(i));
 	}
 	// Read Port Names
 	printPGMStr(PSTR("\r\nPNAMES: "));

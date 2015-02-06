@@ -83,7 +83,7 @@
 #define EEPROM_OFFSET_P8_SENSE 12 // 1 byte at offset 12
 #define EEPROM_OFFSET_CYCLE_TIME 13 // 1 byte at offset 13
 
-#define EEPROM_OFFSET_P0LIMIT 16 // 8 Bytes at offset 16
+#define EEPROM_OFFSET_LIMIT 16 // 8 Bytes at offset 16
 
 #define EEPROM_OFFSET_P0NAME 64 // 16 bytes at offset 64
 #define EEPROM_OFFSET_P1NAME 80 // 16 bytes at offset 80
