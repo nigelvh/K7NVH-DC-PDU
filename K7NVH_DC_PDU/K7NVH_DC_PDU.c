@@ -225,25 +225,24 @@ static inline void INPUT_Parse(void) {
 			return;
 		}
 	}
-	// Set a port or list of ports default state at startup to ON
-	if (strncmp_P(DATA_IN, PSTR("SETDEFON"), 8) == 0) {
-		INPUT_Parse_args(&pd, DATA_IN + 8);
-		for (uint8_t i = 0; i < PORT_CNT; i++) {
-			if (pd & (1 << i)) {
-				EEPROM_Write_Port_Default(i, 1);
-			}
+	if (strncmp_P(DATA_IN, PSTR("SETDEF"), 6) == 0) {
+		char *str = DATA_IN + 6;
+		uint8_t state = 255;
+		if (strncmp_P(str, PSTR("ON"), 2) == 0) {
+			state = 1;
 		}
-		return;
-	}
-	// Set a port or list of ports default state at startup to OFF
-	if (strncmp_P(DATA_IN, PSTR("SETDEFOFF"), 9) == 0) {
-		INPUT_Parse_args(&pd, DATA_IN + 9);
-		for (uint8_t i = 0; i < PORT_CNT; i++) {
-			if (pd & (1 << i)) {
-				EEPROM_Write_Port_Default(i, 0);
-			}
+		if (strncmp_P(str, PSTR("OFF"), 3) == 0) {
+			state = 0;
 		}
-		return;
+		if (state <= 1) {
+			INPUT_Parse_args(&pd, (state ? DATA_IN+8 : DATA_IN+9));
+			for (uint8_t i = 0; i < PORT_CNT; i++) {
+				if (pd & (1 << i)) {
+					EEPROM_Write_Port_Default(i, state);
+				}
+			}
+			return;
+		}
 	}
 	// Set the Port 8 Sense mode
 	if (strncmp_P(DATA_IN, PSTR("SETSENSE"), 8) == 0) {
