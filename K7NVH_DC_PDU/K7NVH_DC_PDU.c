@@ -247,13 +247,15 @@ static inline void INPUT_Parse(void) {
 	}
 	// Set the Port 8 Sense mode
 	if (strncmp_P(DATA_IN, PSTR("SETSENSE"), 8) == 0) {
-		if (DATA_IN[8] == 'V') {
+		char *str = DATA_IN + 8;
+		while (*str == ' ' || *str == '\t') str++;
+		if (*str == 'V') {
 			EEPROM_Write_P8_Sense(1);
 			printPGMStr(STR_Port_8_Sense);
 			printPGMStr(PSTR("VOLTAGE"));
 			return;
 		}
-		if (DATA_IN[8] == 'I') {
+		if (*str == 'I') {
 			EEPROM_Write_P8_Sense(0);
 			printPGMStr(STR_Port_8_Sense);
 			printPGMStr(PSTR("CURRENT"));
@@ -262,7 +264,9 @@ static inline void INPUT_Parse(void) {
 	}
 	// Set the VREF voltage and store in EEPROM to correct voltage readings.
 	if (strncmp_P(DATA_IN, PSTR("SETVREF"), 7) == 0) {
-		uint16_t temp_set_vref = atoi(DATA_IN + 7);
+		char *str = DATA_IN + 7;
+		while (*str == ' ' || *str == '\t') str++;
+		uint16_t temp_set_vref = atoi(str);
 		if (temp_set_vref >= VREF_MIN && temp_set_vref <= VREF_MAX){
 			float temp_vref = (float)temp_set_vref / 1000.0;
 			EEPROM_Write_REF_V(temp_vref);

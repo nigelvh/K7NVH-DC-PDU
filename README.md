@@ -44,11 +44,46 @@ Valid range for the 'SETCYCLE' command is 0-30 seconds. 0 seconds being no delay
 For example, to set a 5 second delay, the following are valid 'SETCYCLE' syntaxes. `SETCYCLE5` `SETCYCLE 5`
 
 ### SETDEFON
-The 'SETDEFON' command is used to store the desired default state of each port at PDU boot time to enabled. The PDU will default to all ports being enabled at boot, but you may leave ports disabled at boot with the 'SETDEFOFF' command, or set them back to enabled via 'SETDEFON'.
+The 'SETDEFON' command is used to store the desired default state of a given port at PDU boot time to enabled. The PDU will default to all ports being enabled at boot, but you may leave ports disabled at boot with the 'SETDEFOFF' command, or set them back to enabled via 'SETDEFON'.
 
 The PDU supports somewhat arbitrary specification of which ports to change default state for. For example, all of the following are valid 'SETDEFON' syntaxes. `SETDEFON 1` `SETDEFON1` `SETDEFON 1 2 3 4` `SETDEFON1234` `SETDEFON 1234`
 
 ### SETDEFOFF
-The 'SETDEFOFF' command is used to store the desired default state of each port at PDU boot time to disabled. The PDU will default to all ports being enabled at boot, but you may leave ports disabled at boot with the 'SETDEFOFF' command, or set them back to enabled via 'SETDEFON'.
+The 'SETDEFOFF' command is used to store the desired default state of a given port at PDU boot time to disabled. The PDU will default to all ports being enabled at boot, but you may leave ports disabled at boot with the 'SETDEFOFF' command, or set them back to enabled via 'SETDEFON'.
 
 The PDU supports somewhat arbitrary specification of which ports to change default state for. For example, all of the following are valid 'SETDEFOFF' syntaxes. `SETDEFOFF 1` `SETDEFOFF1` `SETDEFOFF 1 2 3 4` `SETDEFOFF1234` `SETDEFOFF 1234`
+
+### SETNAME
+The 'SETNAME' command is used to store a user defined "helpful" name for each port on the PDU. By default the custom names are blank, but they may be set to a user defined string of up to 15 characters in length. Strings longer than 15 characters will be truncated.
+
+The user defined name will be displayed alongside the port number in the output from the 'STATUS' command.
+
+The PDU supports setting only one port name at a time, but the syntax is flexible like with other multi-port commands. The following are examples of valid 'SETNAME' syntax, setting Port 1's name to "Testing". `SETNAME1Testing` `SETNAME1 Testing` `SETNAME 1Testing` `SETNAME 1 Testing`
+
+### SETLIMIT
+The 'SETLIMIT' command is used to store a user defined overload current limit for each port on the PDU. By default the current limit is set to 10 amps. While the PDU is not rated for this current flow, 10A was chosen to effectively "disable" current limits from disabling PDU ports.
+
+During normal operation the PDU will continuously check current flow on each port, and compare against the stored limits. If a port is found to exceed the stored limit for greater than 10ms (milliseconds), the port will be disabled, a warning message will be printed, and a overload flag will be displayed in the 'STATUS' output.
+
+'SETLIMIT' is set in units of mA (milliamps), and accepts values from 0 to 10000 (0 to 10 amps). However, the provided input will be truncated to tenths of amps. For example, a value of 1150, will be truncated to 1.1A.
+
+The PDU supports setting only one port limit at a time, but the syntax is flexible like with other multi-port commands. The following are examples of valid 'SETLIMIT' syntax, setting Port 1's limit to 1.5A. `SETLIMIT11500` `SETLIMIT1 1500` `SETLIMIT 11500` `SETLIMIT 1 1500`
+
+### SETVREF
+The 'SETVREF' command is used only during calibration of the PDU. Measuring the voltage reference regulator with an accurate voltage meter, the calibration of voltage and current measurements can be updated.
+
+'SETVREF' is set in units of mV (millivolts), and accepts values from 4000 to 4400 (4.0V to 4.4V). The default value if uncalibrated is the regulator's nominal output voltage of 4.2V.
+
+For example, to set the voltage reference calibration to 4.2V, the following are valid 'SETVREF' syntaxes. `SETVREF4200` `SETVREF 4200`
+
+### SETSENSE
+The 'SETSENSE' command is used only after having changed the SENSE solder jumper on the PDU board, selecting the sense channel for Port 8 between sensing INPUT voltage, or the current flowing through Port 8.
+
+'SETSENSE' is set with either I for current, or V for voltage. The default value will assume the jumper is set to measure current.
+
+For example, to set the sensing mode to INPUT voltage, the following are valid 'SETSENSE' syntaxes. `SETSENSEV` `SETSENSE V`
+
+### EEPROMDUMP
+The 'EEPROMDUMP' command is used only for debugging PDU stored state. It will output a variety of values stored in various locations in EEPROM memory, and may not be formatted for easy understanding.
+
+In the cases of unset or default values, the 'EEPROMDUMP' command may return a number of unprintable characters to your terminal. This is expected behavior.
