@@ -10,7 +10,6 @@
 int main(void) {
 	// Read EEPROM stored variables
 	EEPROM_Read_REF_V();
-	EEPROM_Read_P8_Sense();
 	EEPROM_Read_PCycle_Time();
 
 	// Initialize some variables
@@ -323,7 +322,7 @@ static inline void INPUT_Parse(void) {
 // Print a summary of all ports status'
 static inline void PRINT_Status(void) {
 	float voltage, current;
-	if (PORT8_SENSE == 1) {
+	if (EEPROM_Read_P8_Sense() == 1) {
 		voltage = ADC_Read_Voltage();
 		printPGMStr(PSTR("\r\nInput Voltage: "));
 		fprintf(&USBSerialStream, "%.2fV", voltage);
@@ -334,11 +333,11 @@ static inline void PRINT_Status(void) {
 		EEPROM_Read_Port_Name(i, temp_name);
 		fprintf(&USBSerialStream, "%i \"%s\": ", i+1, temp_name);
 		if (PORT_STATE[i] & 0b00000001) { printPGMStr(STR_Enabled); } else { printPGMStr(STR_Disabled); }
-		if (i == 7 && PORT8_SENSE == 1) break;
+		if (i == 7 && EEPROM_Read_P8_Sense() == 1) break;
 		current = ADC_Read_Current(i);
 		printPGMStr(PSTR(". Current: "));
 		fprintf(&USBSerialStream, "%.2fA ", current);
-		if (PORT8_SENSE == 1) {
+		if (EEPROM_Read_P8_Sense() == 1) {
 			printPGMStr(PSTR("Power: "));
 			fprintf(&USBSerialStream, "%.1fW ", (voltage * current));
 		}
@@ -407,7 +406,7 @@ static inline void LED_CTL(uint8_t led, uint8_t state) {
 static inline uint8_t PORT_Check_Current_Limit(uint8_t port){
 	// If we were asked for port 8, but we're sensing voltage, we don't know what the
 	// current flow is. Return 0.
-	if (port == 7 && PORT8_SENSE == 1) { return 0; }
+	if (port == 7 && EEPROM_Read_P8_Sense() == 1) { return 0; }
 	
 	// Check for above threshold current flow, and return 1.
 	if (ADC_Read_Current(port) > ((float)EEPROM_Read_Port_Limit(port) / 10.0)) { return 1; }
@@ -447,14 +446,15 @@ static inline void EEPROM_Write_REF_V(float reference) {
 }
 
 // Read the stored Port 8 Sense mode
-static inline void EEPROM_Read_P8_Sense(void) {
-	PORT8_SENSE = eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_P8_SENSE));
-	if (PORT8_SENSE < 0 || PORT8_SENSE > 1) PORT8_SENSE = 0;
+// 0 = Current, 1 = Voltage
+static inline uint8_t EEPROM_Read_P8_Sense(void) {
+	uint8_t PORT8_SENSE = eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_P8_SENSE));
+	if (PORT8_SENSE > 1) PORT8_SENSE = 0;
+	return PORT8_SENSE;
 }
 // Write the Port 8 Sense mode to EEPROM
 static inline void EEPROM_Write_P8_Sense(uint8_t mode) {
 	eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_P8_SENSE), mode);
-	PORT8_SENSE = mode;
 }
 
 // Read PCYCLE_TIME from EEPROM
