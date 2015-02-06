@@ -9,7 +9,6 @@
 // Main program entry point.
 int main(void) {
 	// Read EEPROM stored variables
-	EEPROM_Read_Port_Defaults();
 	EEPROM_Read_REF_V();
 	EEPROM_Read_P8_Sense();
 	EEPROM_Read_PCycle_Time();
@@ -54,7 +53,7 @@ int main(void) {
 
 	// Enable/Disable ports per their defaults
 	for(uint8_t i = 0; i < PORT_CNT; i++) {
-		PORT_CTL(i, PORT_DEF[i]);
+		PORT_CTL(i, EEPROM_Read_Port_Default(i));
 		run_lufa();
 	}
 
@@ -233,10 +232,9 @@ static inline void INPUT_Parse(void) {
 		INPUT_Parse_args(&pd, DATA_IN + 8);
 		for (uint8_t i = 0; i < PORT_CNT; i++) {
 			if (pd & (1 << i)) {
-				PORT_DEF[i] = 1;
+				EEPROM_Write_Port_Default(i, 1);
 			}
 		}
-		EEPROM_Write_Port_Defaults();
 		return;
 	}
 	// Set a port or list of ports default state at startup to OFF
@@ -244,10 +242,9 @@ static inline void INPUT_Parse(void) {
 		INPUT_Parse_args(&pd, DATA_IN + 9);
 		for (uint8_t i = 0; i < PORT_CNT; i++) {
 			if (pd & (1 << i)) {
-				PORT_DEF[i] = 0;
+				EEPROM_Write_Port_Default(i, 0);
 			}
 		}
-		EEPROM_Write_Port_Defaults();
 		return;
 	}
 	// Set the Port 8 Sense mode
@@ -425,24 +422,18 @@ static inline uint8_t PORT_Check_Current_Limit(uint8_t port){
 // ~~ EEPROM Functions
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 
-// Read the default port state settings into the PORT_DEF array in RAM
-static inline void EEPROM_Read_Port_Defaults(void) {
-	for (uint8_t i = 0; i < PORT_CNT; i++) {
-		// Update the PORT_DEF array with the values from EEPROM
-		PORT_DEF[i] = eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_PORT_DEFAULTS + i));
-		// If the value is not 0 or 1 (uninitialized), default it to 1
-		if (PORT_DEF[i] < 0 || PORT_DEF[i] > 1) PORT_DEF[i] = 1;
-	}
+// Read the default port state setting
+static inline uint8_t EEPROM_Read_Port_Default(uint8_t port) {
+	uint8_t portdef = eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_PORT_DEFAULTS + port));
+	if (portdef > 1) portdef = 1;
+	return portdef;
 }
-// Write the default port state settings from the PORT_DEF array in RAM
-static inline void EEPROM_Write_Port_Defaults(void) {
-	for (uint8_t i = 0; i < PORT_CNT; i++) {
-		// Update the EERPOM with the values from the PORT_DEF array
-		eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_PORT_DEFAULTS + i), PORT_DEF[i]);
-		printPGMStr(STR_Port_Default);
-		fprintf(&USBSerialStream, "%i ", i+1);
-		printPGMStr(PORT_DEF[i] ? STR_Enabled : STR_Disabled);
-	}
+// Write the default port state setting
+static inline void EEPROM_Write_Port_Default(uint8_t port, uint8_t portdef) {
+	eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_PORT_DEFAULTS + port), portdef);
+	printPGMStr(STR_Port_Default);
+	fprintf(&USBSerialStream, "%i ", port+1);
+	printPGMStr(portdef ? STR_Enabled : STR_Disabled);
 }
 
 // Read the stored reference voltage from EEPROM
@@ -520,7 +511,6 @@ static inline uint8_t EEPROM_Read_Port_Limit(uint8_t port) {
 	}
 	return limit;
 }
-
 // Stored as amps*10 so 50==5.0A
 static inline void EEPROM_Write_Port_Limit(uint8_t port, uint8_t limit) {
 	eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_P0LIMIT+(port)), limit);

@@ -78,19 +78,12 @@
 #define LIMIT_MAX 100 // Stored as amps*10 so 50==5.0A
 
 // EEPROM Offsets
-#define EEPROM_OFFSET_PORT_DEFAULTS 0 // Eight bytes at offset 0
-#define EEPROM_OFFSET_REF_V 8 // Four bytes at offset 8
-#define EEPROM_OFFSET_P8_SENSE 12 // One byte at offset 12
-#define EEPROM_OFFSET_CYCLE_TIME 13 // One byte at offset 13
+#define EEPROM_OFFSET_PORT_DEFAULTS 0 // 8 bytes at offset 0
+#define EEPROM_OFFSET_REF_V 8 // 4 bytes at offset 8
+#define EEPROM_OFFSET_P8_SENSE 12 // 1 byte at offset 12
+#define EEPROM_OFFSET_CYCLE_TIME 13 // 1 byte at offset 13
 
-#define EEPROM_OFFSET_P0LIMIT 16 // 1 Byte at offset 16
-#define EEPROM_OFFSET_P1LIMIT 17 // 1 Byte at offset 17
-#define EEPROM_OFFSET_P2LIMIT 18 // 1 Byte at offset 18
-#define EEPROM_OFFSET_P3LIMIT 19 // 1 Byte at offset 19
-#define EEPROM_OFFSET_P4LIMIT 20 // 1 Byte at offset 20
-#define EEPROM_OFFSET_P5LIMIT 21 // 1 Byte at offset 21
-#define EEPROM_OFFSET_P6LIMIT 22 // 1 Byte at offset 22
-#define EEPROM_OFFSET_P7LIMIT 23 // 1 Byte at offset 23
+#define EEPROM_OFFSET_P0LIMIT 16 // 8 Bytes at offset 16
 
 #define EEPROM_OFFSET_P0NAME 64 // 16 bytes at offset 64
 #define EEPROM_OFFSET_P1NAME 80 // 16 bytes at offset 80
@@ -145,7 +138,6 @@ const char STR_Port_Limit[] PROGMEM = "\r\nPORT LIMIT: ";
 const char STR_VREF[] PROGMEM = "\r\nVREF: ";
 
 // Variables stored in EEPROM
-uint8_t PORT_DEF[PORT_CNT]; // Default state for the ports
 float REF_V; // Stores as volts
 uint8_t PORT8_SENSE; // 0 = Current, 1 = Voltage
 uint8_t PCYCLE_TIME; // Seconds
@@ -205,8 +197,8 @@ static inline void PORT_CTL(uint8_t port, uint8_t state);
 static inline void PORT_Set_Ctl(pd_set *pd, uint8_t state);
 static inline uint8_t PORT_Check_Current_Limit(uint8_t port);
 
-static inline void EEPROM_Read_Port_Defaults(void);
-static inline void EEPROM_Write_Port_Defaults(void);
+static inline uint8_t EEPROM_Read_Port_Default(uint8_t port);
+static inline void EEPROM_Write_Port_Default(uint8_t port, uint8_t portdef);
 static inline void EEPROM_Read_REF_V(void);
 static inline void EEPROM_Write_REF_V(float reference);
 static inline void EEPROM_Read_P8_Sense(void);
