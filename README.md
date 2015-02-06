@@ -15,16 +15,36 @@ The 'STATUS' command is designed to give an overview of the running state of eac
 
 ### PON
 The 'PON' command is used to enable one or more ports on the PDU. The PDU supports somewhat arbitrary specification of which ports to enable, for example, all of the following are valid 'PON' syntaxes.
-```PON 1```
-```PON1```
-```PON 1 2 3 4```
-```PON1234```
-```PON 1234```
+```
+PON 1
+```
+```
+PON1
+```
+```
+PON 1 2 3 4
+```
+```
+PON1234
+```
+```
+PON 1234
+```
 
 ### POFF
 The 'POFF' command is used to disable one or more ports on the PDU. The PDU supports somewhat arbitrary specification of which ports to disable, for example, all of the following are valid 'POFF' syntaxes.
-```POFF 1```
-```POFF1```
-```POFF 1 2 3 4```
-```POFF1234```
-```POFF 1234```
+```
+POFF 1
+```
+```
+POFF1
+```
+```
+POFF 1 2 3 4
+```
+```
+POFF1234
+```
+```
+POFF 1234
+```
