@@ -87,3 +87,10 @@ For example, to set the sensing mode to INPUT voltage, the following are valid '
 The 'EEPROMDUMP' command is used only for debugging PDU stored state. It will output a variety of values stored in various locations in EEPROM memory, and may not be formatted for easy understanding.
 
 In the cases of unset or default values, the 'EEPROMDUMP' command may return a number of unprintable characters to your terminal. This is expected behavior.
+
+## Drivers
+The PDU board is automatically recognized as a USB serial device under OSX and Linux, however, windows requires a driver to associate the device with the built in USB serial device drivers.
+
+When first attaching the device to a windows based host, windows will attempt to find a driver and fail. You may then specify a driver. This is provided in K7NVH_PDU.inf.
+
+Once you have installed the driver, the PDU will register as a COM port device under windows, and you may access it with any serial/terminal application of your preference.
