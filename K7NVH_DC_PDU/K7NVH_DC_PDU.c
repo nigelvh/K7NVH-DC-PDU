@@ -10,7 +10,6 @@
 int main(void) {
 	// Read EEPROM stored variables
 	EEPROM_Read_REF_V();
-	EEPROM_Read_PCycle_Time();
 
 	// Initialize some variables
 	STEP_V = REF_V / 1024;
@@ -198,7 +197,7 @@ static inline void INPUT_Parse(void) {
 		PORT_Set_Ctl(&pd, 0);
 		return;
 	}
-	// Power cycle a port or list of ports. Time is defined by PCYCLE_TIME.
+	// Power cycle a port or list of ports. Time is defined by EEPROM_Read_PCycle_Time().
 	if (strncmp_P(DATA_IN, PSTR("PCYCLE"), 6) == 0) {
 		INPUT_Parse_args(&pd, DATA_IN + 6);
 		
@@ -206,7 +205,7 @@ static inline void INPUT_Parse(void) {
 
 		fprintf(&USBSerialStream, "\r\n");
 		run_lufa();
-		for (uint16_t i = 0; i < (PCYCLE_TIME); i++) {
+		for (uint16_t i = 0; i < (EEPROM_Read_PCycle_Time()); i++) {
 			_delay_ms(1000);
 			fputc('.', &USBSerialStream);
 			run_lufa();
@@ -458,14 +457,15 @@ static inline void EEPROM_Write_P8_Sense(uint8_t mode) {
 }
 
 // Read PCYCLE_TIME from EEPROM
-static inline void EEPROM_Read_PCycle_Time(void) {
-	PCYCLE_TIME = eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_CYCLE_TIME));
-	if (PCYCLE_TIME < 0 || PCYCLE_TIME > PCYCLE_MAX_TIME) PCYCLE_TIME = 1; 
+// Stored as Seconds
+static inline uint8_t EEPROM_Read_PCycle_Time(void) {
+	uint8_t PCYCLE_TIME = eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_CYCLE_TIME));
+	if (PCYCLE_TIME > PCYCLE_MAX_TIME) PCYCLE_TIME = 1;
+	return PCYCLE_TIME;
 }
 // Write the PCYCLE_TIME to EEPROM
 static inline void EEPROM_Write_PCycle_Time(uint8_t time) {
 	eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_CYCLE_TIME), time);
-	PCYCLE_TIME = time;
 }
 
 // Read the stored port name

@@ -139,7 +139,6 @@ const char STR_VREF[] PROGMEM = "\r\nVREF: ";
 
 // Variables stored in EEPROM
 float REF_V; // Stores as volts
-uint8_t PCYCLE_TIME; // Seconds
 
 // Port to ADC Address look up table
 const uint8_t ADC_Ports[PORT_CNT] = \
@@ -202,7 +201,7 @@ static inline void EEPROM_Read_REF_V(void);
 static inline void EEPROM_Write_REF_V(float reference);
 static inline uint8_t EEPROM_Read_P8_Sense(void);
 static inline void EEPROM_Write_P8_Sense(uint8_t mode);
-static inline void EEPROM_Read_PCycle_Time(void);
+static inline uint8_t EEPROM_Read_PCycle_Time(void);
 static inline void EEPROM_Write_PCycle_Time(uint8_t time);
 static inline void EEPROM_Read_Port_Name(uint8_t port, char *str);
 static inline void EEPROM_Write_Port_Name(uint8_t port, char *str);
