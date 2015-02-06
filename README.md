@@ -14,3 +14,7 @@ created script to automate control actions.
 This is the source code to be compiled by AVR-GCC for installation on the device itself.
 The device should already have this installed, and is only needed if you want to make 
 modifications.
+
+## Supported Commands
+### PON
+Stuff here
