@@ -75,6 +75,8 @@
 #define PCYCLE_MAX_TIME 30 // Seconds
 #define VREF_MAX 4400 // 4.4V * 1000
 #define VREF_MIN 4000 // 4.0V * 1000
+#define VDIV_MAX 120 // 12.0
+#define VDIV_MIN 80 // 8.0
 #define LIMIT_MAX 100 // Stored as amps*10 so 50==5.0A
 
 // EEPROM Offsets
@@ -84,6 +86,7 @@
 #define EEPROM_OFFSET_CYCLE_TIME 13 // 1 byte at offset 13
 
 #define EEPROM_OFFSET_LIMIT 16 // 8 Bytes at offset 16
+#define EEPROM_OFFSET_DIV_V 24 // 4 bytes at offset 24
 
 #define EEPROM_OFFSET_P0NAME 64 // 16 bytes at offset 64
 #define EEPROM_OFFSET_P1NAME 80 // 16 bytes at offset 80
@@ -136,9 +139,11 @@ const char STR_Port_8_Sense[] PROGMEM = "\r\nPORT 8 SENSE ";
 const char STR_PCYCLE_Time[] PROGMEM = "\r\nPCYCLE TIME: ";
 const char STR_Port_Limit[] PROGMEM = "\r\nPORT LIMIT: ";
 const char STR_VREF[] PROGMEM = "\r\nVREF: ";
+const char STR_VDIV[] PROGMEM = "\r\nVDIV: ";
 
 // Variables stored in EEPROM
 float REF_V; // Stores as volts
+float DIV_V;
 
 // Port to ADC Address look up table
 const uint8_t ADC_Ports[PORT_CNT] = \
@@ -199,6 +204,8 @@ static inline uint8_t EEPROM_Read_Port_Default(uint8_t port);
 static inline void EEPROM_Write_Port_Default(uint8_t port, uint8_t portdef);
 static inline void EEPROM_Read_REF_V(void);
 static inline void EEPROM_Write_REF_V(float reference);
+static inline void EEPROM_Read_DIV_V(void);
+static inline void EEPROM_Write_DIV_V(float div);
 static inline uint8_t EEPROM_Read_P8_Sense(void);
 static inline void EEPROM_Write_P8_Sense(uint8_t mode);
 static inline uint8_t EEPROM_Read_PCycle_Time(void);

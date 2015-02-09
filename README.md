@@ -76,6 +76,13 @@ The 'SETVREF' command is used only during calibration of the PDU. Measuring the 
 
 For example, to set the voltage reference calibration to 4.2V, the following are valid 'SETVREF' syntaxes. `SETVREF4200` `SETVREF 4200`
 
+### SETVDIV
+The 'SETVDIV' command is used only during calibration of the PDU. Measuring the voltage divider on the input port with an accurate voltage meter, calibration of voltage supply measurements can be made.
+
+'SETVDIV' is a unitless multiplier, specified in VALUE*10, and accepts values from 120 to 80 (12.0X to 8.0X). The default value if uncalibrated is the dividers's nominal voltage division of 10.1X.
+
+For example, to set the divider reference calibration to 10.1X, the following are valid 'SETVDIV' syntaxes. `SETVREF101` `SETVREF 101`
+
 ### SETSENSE
 The 'SETSENSE' command is used only after having changed the SENSE solder jumper on the PDU board, selecting the sense channel for Port 8 between sensing INPUT voltage, or the current flowing through Port 8.
 

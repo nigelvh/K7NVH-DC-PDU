@@ -3,6 +3,7 @@
 // TODO
 // High water mark stored in EEPROM (Lifetime & User resettable)
 // Port locking?
+// Help (?) command?
 
 #include "K7NVH_DC_PDU.h"
 
@@ -10,6 +11,7 @@
 int main(void) {
 	// Read EEPROM stored variables
 	EEPROM_Read_REF_V();
+	EEPROM_Read_DIV_V();
 
 	// Initialize some variables
 	STEP_V = REF_V / 1024;
@@ -274,6 +276,19 @@ static inline void INPUT_Parse(void) {
 			return;
 		}
 	}
+	// Set the VREF voltage and store in EEPROM to correct voltage readings.
+	if (strncmp_P(DATA_IN, PSTR("SETVDIV"), 7) == 0) {
+		char *str = DATA_IN + 7;
+		while (*str == ' ' || *str == '\t') str++;
+		uint16_t temp_set_vdiv = atoi(str);
+		if (temp_set_vdiv >= VDIV_MIN && temp_set_vdiv <= VDIV_MAX){
+			float temp_vdiv = (float)temp_set_vdiv / 10.0;
+			EEPROM_Write_DIV_V(temp_vdiv);
+			printPGMStr(STR_VDIV);
+			fprintf(&USBSerialStream, "%.1f", temp_vdiv);
+			return;
+		}
+	}
 	// Set the name for a given port.
 	if (strncmp_P(DATA_IN, PSTR("SETNAME"), 7) == 0) {
 		char *str = DATA_IN + 7;
@@ -447,6 +462,18 @@ static inline void EEPROM_Write_REF_V(float reference) {
 	REF_V = reference;
 }
 
+// Read the stored reference voltage from EEPROM
+static inline void EEPROM_Read_DIV_V(void) {
+	DIV_V = eeprom_read_float((float*)(EEPROM_OFFSET_DIV_V));
+	// If the value seems out of range (uninitialized), default it to 10.1
+	if (DIV_V < 8.0 || DIV_V > 12.0 || isnan(DIV_V)) DIV_V = 10.1;
+}
+// Write the reference voltage to EEPROM
+static inline void EEPROM_Write_DIV_V(float div) {
+	eeprom_update_float((float*)(EEPROM_OFFSET_DIV_V), div);
+	DIV_V = div;
+}
+
 // Read the stored Port 8 Sense mode
 // 0 = Current, 1 = Voltage
 static inline uint8_t EEPROM_Read_P8_Sense(void) {
@@ -527,6 +554,9 @@ static inline void EEPROM_Dump_Vars(void) {
 	// Read REF_V
 	printPGMStr(STR_VREF);
 	fprintf(&USBSerialStream, "%.2f %.2f", eeprom_read_float((float*)(EEPROM_OFFSET_REF_V)), REF_V);
+	// Read DIV_V
+	printPGMStr(STR_VDIV);
+	fprintf(&USBSerialStream, "%.1f %.1f", eeprom_read_float((float*)(EEPROM_OFFSET_DIV_V)), DIV_V);
 	// Read P8_SENSE
 	printPGMStr(STR_Port_8_Sense);
 	fprintf(&USBSerialStream, "%i", eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_P8_SENSE)));
@@ -561,7 +591,7 @@ static inline float ADC_Read_Current(uint8_t port) {
 
 // Read input voltage on ADC channel 8 if not measuring current
 static inline float ADC_Read_Voltage(void) {
-	return ((ADC_Read_Raw(7)* STEP_V) * 10.1);
+	return ((ADC_Read_Raw(7)* STEP_V) * DIV_V);
 }
 
 // Return raw counts from the ADC
