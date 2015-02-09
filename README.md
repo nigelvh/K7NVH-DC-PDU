@@ -20,21 +20,21 @@ If the PDU is configured for Current Sense, 'STATUS' will display the current (a
 ### PON
 The 'PON' command is used to enable one or more ports on the PDU.
 
-The PDU supports somewhat arbitrary specification of which ports to enable. For example, all of the following are valid 'PON' syntaxes.
-`PON 1` `PON1` `PON 1 2 3 4` `PON1234` `PON 1234`
+The PDU supports somewhat arbitrary specification of which ports to enable. For example, all of the following are valid 'PON' syntaxes. 'A' can also be substituted for a port number to enable all ports.
+`PON 1` `PON1` `PON 1 2 3 4` `PON1234` `PON 1234` `PON A`
 
 ### POFF
 The 'POFF' command is used to disable one or more ports on the PDU.
 
-The PDU supports somewhat arbitrary specification of which ports to disable. For example, all of the following are valid 'POFF' syntaxes.
-`POFF 1` `POFF1` `POFF 1 2 3 4` `POFF1234` `POFF 1234`
+The PDU supports somewhat arbitrary specification of which ports to disable. For example, all of the following are valid 'POFF' syntaxes. 'A' can also be substituted for a port number to disable all ports.
+`POFF 1` `POFF1` `POFF 1 2 3 4` `POFF1234` `POFF 1234` `POFF A`
 
 ### PCYCLE
 The 'PCYCLE' command is used to disable one or more ports on the PDU for a period of time set by the 'SETCYCLE' command, after which, the port is enabled again.
 
 If 'PCYCLE' is issued on a port that is already disabled, the port will remain disabled for the period of time set by the 'SETCYCLE' command, and will be enabled with any other ports specified.
 
-The PDU supports somewhat arbitrary specification of which ports to cycle. For example, all of the following are valid 'PCYCLE' syntaxes. `PCYCLE 1` `PCYCLE1` `PCYCLE 1 2 3 4` `PCYCLE1234` `PCYCLE 1234`
+The PDU supports somewhat arbitrary specification of which ports to cycle. For example, all of the following are valid 'PCYCLE' syntaxes. 'A' can also be substituted for a port number to cycle all ports. `PCYCLE 1` `PCYCLE1` `PCYCLE 1 2 3 4` `PCYCLE1234` `PCYCLE 1234` `PCYCLE A`
 
 ### SETCYCLE
 The 'SETCYCLE' command is used to set the period of time in seconds that ports will be disabled on the PDU during a 'PCYCLE' command. This command has no immediate impact on any ports.
@@ -46,12 +46,12 @@ For example, to set a 5 second delay, the following are valid 'SETCYCLE' syntaxe
 ### SETDEFON
 The 'SETDEFON' command is used to store the desired default state of a given port at PDU boot time to enabled. The PDU will default to all ports being enabled at boot, but you may leave ports disabled at boot with the 'SETDEFOFF' command, or set them back to enabled via 'SETDEFON'.
 
-The PDU supports somewhat arbitrary specification of which ports to change default state for. For example, all of the following are valid 'SETDEFON' syntaxes. `SETDEFON 1` `SETDEFON1` `SETDEFON 1 2 3 4` `SETDEFON1234` `SETDEFON 1234`
+The PDU supports somewhat arbitrary specification of which ports to change default state for. For example, all of the following are valid 'SETDEFON' syntaxes. 'A' can also be substituted for a port number to change all ports.`SETDEFON 1` `SETDEFON1` `SETDEFON 1 2 3 4` `SETDEFON1234` `SETDEFON 1234` `SETDEFON A`
 
 ### SETDEFOFF
 The 'SETDEFOFF' command is used to store the desired default state of a given port at PDU boot time to disabled. The PDU will default to all ports being enabled at boot, but you may leave ports disabled at boot with the 'SETDEFOFF' command, or set them back to enabled via 'SETDEFON'.
 
-The PDU supports somewhat arbitrary specification of which ports to change default state for. For example, all of the following are valid 'SETDEFOFF' syntaxes. `SETDEFOFF 1` `SETDEFOFF1` `SETDEFOFF 1 2 3 4` `SETDEFOFF1234` `SETDEFOFF 1234`
+The PDU supports somewhat arbitrary specification of which ports to change default state for. For example, all of the following are valid 'SETDEFOFF' syntaxes. 'A' can also be substituted for a port number to change all ports. `SETDEFOFF 1` `SETDEFOFF1` `SETDEFOFF 1 2 3 4` `SETDEFOFF1234` `SETDEFOFF 1234` `SETDEFOFF A`
 
 ### SETNAME
 The 'SETNAME' command is used to store a user defined "helpful" name for each port on the PDU. By default the custom names are blank, but they may be set to a user defined string of up to 15 characters in length. Strings longer than 15 characters will be truncated.
