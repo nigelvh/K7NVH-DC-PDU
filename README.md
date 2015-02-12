@@ -67,7 +67,7 @@ During normal operation the PDU will continuously check current flow on each por
 
 'SETLIMIT' is set in units of mA (milliamps), and accepts values from 0 to 10000 (0 to 10 amps). However, the provided input will be truncated to tenths of amps. For example, a value of 1150, will be truncated to 1.1A.
 
-The PDU supports setting only one port limit at a time, but the syntax is flexible like with other multi-port commands. The following are examples of valid 'SETLIMIT' syntax, setting Port 1's limit to 1.5A. `SETLIMIT1500` `SETLIMIT1 1500` `SETLIMIT 1500` `SETLIMIT 1 1500`
+The PDU supports setting only one port limit at a time, but the syntax is flexible like with other multi-port commands. The following are examples of valid 'SETLIMIT' syntax, setting Port 1's limit to 1.5A. `SETLIMIT11500` `SETLIMIT1 1500` `SETLIMIT 11500` `SETLIMIT 1 1500`
 
 ### SETVREF
 The 'SETVREF' command is used only during calibration of the PDU. Measuring the voltage reference regulator with an accurate voltage meter, the calibration of voltage and current measurements can be updated.
