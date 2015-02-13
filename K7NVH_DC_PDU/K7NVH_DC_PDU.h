@@ -141,15 +141,10 @@ const char STR_Port_Limit[] PROGMEM = "\r\nPORT LIMIT: ";
 const char STR_VREF[] PROGMEM = "\r\nVREF: ";
 const char STR_VDIV[] PROGMEM = "\r\nVDIV: ";
 
-// Variables stored in EEPROM
-float REF_V; // Stores as volts
-float DIV_V;
-
 // Port to ADC Address look up table
 const uint8_t ADC_Ports[PORT_CNT] = \
 		{0b10010000, 0b10000000, 0b10110000, 0b10100000, \
 		 0b11010000, 0b11000000, 0b11110000, 0b11100000};
-float STEP_V = 0; // Will be set at startup.
 
 // State Variables
 ps_set PORT_STATE[PORT_CNT];
@@ -202,9 +197,9 @@ static inline uint8_t PORT_Check_Current_Limit(uint8_t port);
 
 static inline uint8_t EEPROM_Read_Port_Default(uint8_t port);
 static inline void EEPROM_Write_Port_Default(uint8_t port, uint8_t portdef);
-static inline void EEPROM_Read_REF_V(void);
+static inline float EEPROM_Read_REF_V(void);
 static inline void EEPROM_Write_REF_V(float reference);
-static inline void EEPROM_Read_DIV_V(void);
+static inline float EEPROM_Read_DIV_V(void);
 static inline void EEPROM_Write_DIV_V(float div);
 static inline uint8_t EEPROM_Read_P8_Sense(void);
 static inline void EEPROM_Write_P8_Sense(uint8_t mode);
