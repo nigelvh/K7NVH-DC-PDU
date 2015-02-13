@@ -263,8 +263,7 @@ static inline void INPUT_Parse(void) {
 	}
 	// Set the VREF voltage and store in EEPROM to correct voltage readings.
 	if (strncmp_P(DATA_IN, PSTR("SETVREF"), 7) == 0) {
-		char *str = DATA_IN + 7;
-		uint16_t temp_set_vref = atoi(str);
+		uint16_t temp_set_vref = atoi(DATA_IN + 7);
 		if (temp_set_vref >= VREF_MIN && temp_set_vref <= VREF_MAX){
 			float temp_vref = (float)temp_set_vref / 1000.0;
 			EEPROM_Write_REF_V(temp_vref);
@@ -275,8 +274,7 @@ static inline void INPUT_Parse(void) {
 	}
 	// Set the VREF voltage and store in EEPROM to correct voltage readings.
 	if (strncmp_P(DATA_IN, PSTR("SETVDIV"), 7) == 0) {
-		char *str = DATA_IN + 7;
-		uint16_t temp_set_vdiv = atoi(str);
+		uint16_t temp_set_vdiv = atoi(DATA_IN + 7);
 		if (temp_set_vdiv >= VDIV_MIN && temp_set_vdiv <= VDIV_MAX){
 			float temp_vdiv = (float)temp_set_vdiv / 10.0;
 			EEPROM_Write_DIV_V(temp_vdiv);
