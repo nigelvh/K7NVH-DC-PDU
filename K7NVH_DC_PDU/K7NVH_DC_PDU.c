@@ -54,6 +54,7 @@ int main(void) {
 		run_lufa();
 	}
 
+
 	INPUT_Clear();
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -125,7 +126,7 @@ int main(void) {
 				_delay_ms(10);
 				if (PORT_Check_Current_Limit(i)) {
 					// Print a warning message.
-					fprintf(&USBSerialStream, "\r\n");
+					fputs(&USBSerialStream, "\r\n");
 					printPGMStr(STR_Overload);
 					
 					// Disable the port
@@ -202,7 +203,7 @@ static inline void INPUT_Parse(void) {
 		
 		PORT_Set_Ctl(&pd, 0);
 
-		fprintf(&USBSerialStream, "\r\n");
+		fputs(&USBSerialStream, "\r\n");
 		run_lufa();
 		for (uint16_t i = 0; i < (EEPROM_Read_PCycle_Time()); i++) {
 			_delay_ms(1000);
@@ -263,7 +264,6 @@ static inline void INPUT_Parse(void) {
 	// Set the VREF voltage and store in EEPROM to correct voltage readings.
 	if (strncmp_P(DATA_IN, PSTR("SETVREF"), 7) == 0) {
 		char *str = DATA_IN + 7;
-		while (*str == ' ' || *str == '\t') str++;
 		uint16_t temp_set_vref = atoi(str);
 		if (temp_set_vref >= VREF_MIN && temp_set_vref <= VREF_MAX){
 			float temp_vref = (float)temp_set_vref / 1000.0;
@@ -276,7 +276,6 @@ static inline void INPUT_Parse(void) {
 	// Set the VREF voltage and store in EEPROM to correct voltage readings.
 	if (strncmp_P(DATA_IN, PSTR("SETVDIV"), 7) == 0) {
 		char *str = DATA_IN + 7;
-		while (*str == ' ' || *str == '\t') str++;
 		uint16_t temp_set_vdiv = atoi(str);
 		if (temp_set_vdiv >= VDIV_MIN && temp_set_vdiv <= VDIV_MAX){
 			float temp_vdiv = (float)temp_set_vdiv / 10.0;
@@ -338,7 +337,7 @@ static inline void PRINT_Status(void) {
 	float voltage, current;
 	if (EEPROM_Read_P8_Sense() == 1) {
 		voltage = ADC_Read_Voltage();
-		printPGMStr(PSTR("\r\nInput Voltage: "));
+		printPGMStr(PSTR("\r\nVoltage: "));
 		fprintf(&USBSerialStream, "%.2fV", voltage);
 	}
 	for(uint8_t i = 0; i < PORT_CNT; i++) {
@@ -349,7 +348,7 @@ static inline void PRINT_Status(void) {
 		if (PORT_STATE[i] & 0b00000001) { printPGMStr(STR_Enabled); } else { printPGMStr(STR_Disabled); }
 		if (i == 7 && EEPROM_Read_P8_Sense() == 1) break;
 		current = ADC_Read_Current(i);
-		printPGMStr(PSTR(". Current: "));
+		printPGMStr(PSTR(" Current: "));
 		fprintf(&USBSerialStream, "%.2fA ", current);
 		if (EEPROM_Read_P8_Sense() == 1) {
 			printPGMStr(PSTR("Power: "));
@@ -670,27 +669,19 @@ static inline void run_lufa(void) {
 
 // Event handler for the library USB Connection event.
 void EVENT_USB_Device_Connect(void) {
-	// Turn on the first LED to indicate we're enumerated.
-	//PORTD = PORTD & 0b11111110;
+	// We're enumerated. Act on that as desired.
 }
 
 // Event handler for the library USB Disconnection event.
 void EVENT_USB_Device_Disconnect(void) {
-	// Turn off the first LED to indicate we're not enumerated.
-	//PORTD = PORTD | 0b00000001;
+	// We're no longer enumerated. Act on that as desired.
 }
 
 // Event handler for the library USB Configuration Changed event.
 void EVENT_USB_Device_ConfigurationChanged(void) {
 	bool ConfigSuccess = true;
 	ConfigSuccess &= CDC_Device_ConfigureEndpoints(&VirtualSerial_CDC_Interface);
-
-	// Set the second LED to indicate USB is ready or not.
-	//if (ConfigSuccess) {
-	//PORTD = PORTD & 0b11111101;
-	//} else {
-	//PORTD = PORTD | 0b00000010;
-	//}
+	// USB is ready. Act on that as desired.
 }
 
 // Event handler for the library USB Control Request reception event.
