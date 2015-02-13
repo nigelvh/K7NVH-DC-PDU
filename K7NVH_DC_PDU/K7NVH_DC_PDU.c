@@ -175,12 +175,12 @@ static inline void INPUT_Parse(void) {
 	pd_set pd; // Port descriptor bitmap
 
 	// Print a port status summary for all ports
-	if (strcmp_P(DATA_IN, PSTR("STATUS")) == 0) {
+	if (strncmp_P(DATA_IN, PSTR("STATUS"), 6) == 0) {
 		PRINT_Status();
 		return;
 	}
 	// Print a report of the variables stored in EEPROM
-	if (strcmp_P(DATA_IN, PSTR("EEPROMDUMP")) == 0) {
+	if (strncmp_P(DATA_IN, PSTR("EEPROMDUMP"), 10) == 0) {
 		EEPROM_Dump_Vars();
 		return;
 	}
