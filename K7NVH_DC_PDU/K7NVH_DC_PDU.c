@@ -124,7 +124,7 @@ int main(void) {
 				_delay_ms(10);
 				if (PORT_Check_Current_Limit(i)) {
 					// Print a warning message.
-					fputs(&USBSerialStream, "\r\n");
+					fprintf(&USBSerialStream, "\r\n");
 					printPGMStr(STR_Overload);
 					
 					// Disable the port
@@ -210,7 +210,7 @@ static inline void INPUT_Parse(void) {
 		
 		PORT_Set_Ctl(&pd, 0);
 
-		fputs(&USBSerialStream, "\r\n");
+		fprintf(&USBSerialStream, "\r\n");
 		run_lufa();
 		for (uint16_t i = 0; i < (EEPROM_Read_PCycle_Time()); i++) {
 			_delay_ms(1000);
