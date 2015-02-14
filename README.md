@@ -10,6 +10,9 @@ The device is available to the host system as a USB serial device, which when ac
 This is the source code to be compiled by AVR-GCC for installation on the device itself. The device should already have this installed, and is only needed if you want to make modifications.
 
 ## Supported Commands
+### HELP
+The 'HELP' command will print a short message referencing the project page containing documentation.
+
 ### STATUS
 The 'STATUS' command is designed to give an overview of the running state of each port on the PDU. The port numbers, any configured custom port names, and port state (ENABLED/DISABLED) will be displayed.
 
