@@ -4,8 +4,6 @@
 // High water mark stored in EEPROM (Lifetime & User resettable)
 // Port locking?
 // Help (?) command?
-// Enable RED LED on overload
-
 
 #include "K7NVH_DC_PDU.h"
 
@@ -135,10 +133,19 @@ int main(void) {
 					// Mark the overload bit for this port
 					PORT_STATE[i] |= 0b00000010;
 					
+					// Turn the RED LED on.
+					LED_CTL(1, 1);
+					
 					INPUT_Clear();
 				}
 			}
 		}
+		// If no ports are listed as overload anymore, disable the RED led.
+		uint8_t error = 0;
+		for (uint8_t i = 0; i < 8; i++) {
+			if ((PORT_STATE[i] & 0x02) > 0) error++;
+		}
+		if (error == 0) LED_CTL(1, 0);
 		
 		// Keep the LUFA USB stuff fed regularly.
 		run_lufa();
