@@ -182,30 +182,35 @@ static inline void INPUT_Parse_args(pd_set *pd, char *str) {
 static inline void INPUT_Parse(void) {
 	pd_set pd; // Port descriptor bitmap
 
-	// Print a port status summary for all ports
-	if (strncmp_P(DATA_IN, PSTR("STATUS"), 6) == 0) {
+	// HELP - Print a basic help menu
+	if (strncmp_P(DATA_IN, STR_Command_HELP, 4) == 0) {
+		PRINT_Help();
+		return;
+	}
+	// STATUS - Print a port status summary for all ports
+	if (strncmp_P(DATA_IN, STR_Command_STATUS, 6) == 0) {
 		PRINT_Status();
 		return;
 	}
-	// Print a report of the variables stored in EEPROM
-	if (strncmp_P(DATA_IN, PSTR("EEPROMDUMP"), 10) == 0) {
+	// EEPROMDUMP - Print a report of the variables stored in EEPROM
+	if (strncmp_P(DATA_IN, STR_Command_EEPROMDUMP, 10) == 0) {
 		EEPROM_Dump_Vars();
 		return;
 	}
-	// Turn on a port or list of ports
-	if (strncmp_P(DATA_IN, PSTR("PON"), 3) == 0) {
+	// PON - Turn on a port or list of ports
+	if (strncmp_P(DATA_IN, STR_Command_PON, 3) == 0) {
 		INPUT_Parse_args(&pd, DATA_IN + 3);
 		PORT_Set_Ctl(&pd, 1);
 		return;
 	}
-	// Turn off a port or a list of ports
-	if (strncmp_P(DATA_IN, PSTR("POFF"), 4) == 0) {
+	// POFF - Turn off a port or a list of ports
+	if (strncmp_P(DATA_IN, STR_Command_POFF, 4) == 0) {
 		INPUT_Parse_args(&pd, DATA_IN + 4);
 		PORT_Set_Ctl(&pd, 0);
 		return;
 	}
-	// Power cycle a port or list of ports. Time is defined by EEPROM_Read_PCycle_Time().
-	if (strncmp_P(DATA_IN, PSTR("PCYCLE"), 6) == 0) {
+	// PCYCLE - Power cycle a port or list of ports. Time is defined by EEPROM_Read_PCycle_Time().
+	if (strncmp_P(DATA_IN, STR_Command_PCYCLE, 6) == 0) {
 		INPUT_Parse_args(&pd, DATA_IN + 6);
 		
 		PORT_Set_Ctl(&pd, 0);
@@ -222,8 +227,8 @@ static inline void INPUT_Parse(void) {
 		
 		return;
 	}
-	// Set PCYCLE_TIME and store in EEPROM
-	if (strncmp_P(DATA_IN, PSTR("SETCYCLE"), 8) == 0) {
+	// SETCYCLE - Set PCYCLE_TIME and store in EEPROM
+	if (strncmp_P(DATA_IN, STR_Command_SETCYCLE, 8) == 0) {
 		uint16_t temp_set_time = atoi(DATA_IN + 8);
 		if (temp_set_time <= PCYCLE_MAX_TIME) {
 			printPGMStr(STR_PCYCLE_Time);
@@ -232,7 +237,8 @@ static inline void INPUT_Parse(void) {
 			return;
 		}
 	}
-	if (strncmp_P(DATA_IN, PSTR("SETDEF"), 6) == 0) {
+	// SETDEV - Set the port default state
+	if (strncmp_P(DATA_IN, STR_Command_SETDEF, 6) == 0) {
 		char *str = DATA_IN + 6;
 		uint8_t state = 255;
 		if (strncmp_P(str, PSTR("ON"), 2) == 0) {
@@ -251,8 +257,8 @@ static inline void INPUT_Parse(void) {
 			return;
 		}
 	}
-	// Set the Port 8 Sense mode
-	if (strncmp_P(DATA_IN, PSTR("SETSENSE"), 8) == 0) {
+	// SETSENSE - Set the Port 8 Sense mode
+	if (strncmp_P(DATA_IN, STR_Command_SETSENSE, 8) == 0) {
 		char *str = DATA_IN + 8;
 		while (*str == ' ' || *str == '\t') str++;
 		if (*str == 'V') {
@@ -268,8 +274,8 @@ static inline void INPUT_Parse(void) {
 			return;
 		}
 	}
-	// Set the VREF voltage and store in EEPROM to correct voltage readings.
-	if (strncmp_P(DATA_IN, PSTR("SETVREF"), 7) == 0) {
+	// SETVREF - Set the VREF voltage and store in EEPROM to correct voltage readings.
+	if (strncmp_P(DATA_IN, STR_Command_SETVREF, 7) == 0) {
 		uint16_t temp_set_vref = atoi(DATA_IN + 7);
 		if (temp_set_vref >= VREF_MIN && temp_set_vref <= VREF_MAX){
 			float temp_vref = (float)temp_set_vref / 1000.0;
@@ -279,8 +285,8 @@ static inline void INPUT_Parse(void) {
 			return;
 		}
 	}
-	// Set the VREF voltage and store in EEPROM to correct voltage readings.
-	if (strncmp_P(DATA_IN, PSTR("SETVDIV"), 7) == 0) {
+	// SETVDIV - Set the VREF voltage and store in EEPROM to correct voltage readings.
+	if (strncmp_P(DATA_IN, STR_Command_SETVDIV, 7) == 0) {
 		uint16_t temp_set_vdiv = atoi(DATA_IN + 7);
 		if (temp_set_vdiv >= VDIV_MIN && temp_set_vdiv <= VDIV_MAX){
 			float temp_vdiv = (float)temp_set_vdiv / 10.0;
@@ -290,8 +296,8 @@ static inline void INPUT_Parse(void) {
 			return;
 		}
 	}
-	// Set the name for a given port.
-	if (strncmp_P(DATA_IN, PSTR("SETNAME"), 7) == 0) {
+	// SETNAME - Set the name for a given port.
+	if (strncmp_P(DATA_IN, STR_Command_SETNAME, 7) == 0) {
 		char *str = DATA_IN + 7;
 		uint8_t portid;
 		char temp_name[16];
@@ -309,8 +315,8 @@ static inline void INPUT_Parse(void) {
 			return;
 		}
 	}
-	// Set the current limit for a given port.
-	if (strncmp_P(DATA_IN, PSTR("SETLIMIT"), 8) == 0) {
+	// SETLIMIT - Set the current limit for a given port.
+	if (strncmp_P(DATA_IN, STR_Command_SETLIMIT, 8) == 0) {
 		char *str = DATA_IN + 8;
 		uint8_t portid;
 		
@@ -361,6 +367,11 @@ static inline void PRINT_Status(void) {
 		}
 		if (PORT_STATE[i] & 0b00000010) { printPGMStr(STR_Overload); }
 	}
+}
+
+// Print a quick help command
+static inline void PRINT_Help(void) {
+	printPGMStr(STR_Help_Info);
 }
 
 // Print a PGM stored string

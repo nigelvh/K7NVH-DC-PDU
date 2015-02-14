@@ -112,6 +112,9 @@ typedef uint8_t ps_set;
 // in the C APIs.
 static FILE USBSerialStream;
 
+// Help string
+const char STR_Help_Info[] PROGMEM = "\r\nVisit https://github.com/nigelvh/K7NVH-DC-PDU for full docs.";
+
 // Reused strings
 #ifdef ENABLECOLORS
 //	const char STR_Color_Red[] PROGMEM = "\x1b[31m";
@@ -140,6 +143,21 @@ const char STR_PCYCLE_Time[] PROGMEM = "\r\nPCYCLE TIME: ";
 const char STR_Port_Limit[] PROGMEM = "\r\nPORT LIMIT: ";
 const char STR_VREF[] PROGMEM = "\r\nVREF: ";
 const char STR_VDIV[] PROGMEM = "\r\nVDIV: ";
+
+// Command strings
+const char STR_Command_HELP[] PROGMEM = "HELP";
+const char STR_Command_STATUS[] PROGMEM = "STATUS";
+const char STR_Command_EEPROMDUMP[] PROGMEM = "EEPROMDUMP";
+const char STR_Command_PON[] PROGMEM = "PON";
+const char STR_Command_POFF[] PROGMEM = "POFF";
+const char STR_Command_PCYCLE[] PROGMEM = "PCYCLE";
+const char STR_Command_SETCYCLE[] PROGMEM = "SETCYCLE";
+const char STR_Command_SETDEF[] PROGMEM = "SETDEF";
+const char STR_Command_SETSENSE[] PROGMEM = "SETSENSE";
+const char STR_Command_SETVREF[] PROGMEM = "SETVREF";
+const char STR_Command_SETVDIV[] PROGMEM = "SETVDIV";
+const char STR_Command_SETNAME[] PROGMEM = "SETNAME";
+const char STR_Command_SETLIMIT[] PROGMEM = "SETLIMIT";
 
 // Port to ADC Address look up table
 const uint8_t ADC_Ports[PORT_CNT] = \
@@ -217,6 +235,7 @@ static inline uint16_t ADC_Read_Raw(uint8_t port);
 
 static inline void printPGMStr(PGM_P s);
 static inline void PRINT_Status(void);
+static inline void PRINT_Help(void);
 
 static inline void INPUT_Clear(void);
 static inline void INPUT_Parse(void);
