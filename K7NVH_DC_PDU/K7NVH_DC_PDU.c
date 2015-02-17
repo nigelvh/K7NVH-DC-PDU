@@ -3,6 +3,7 @@
 // TODO
 // High water mark stored in EEPROM (Lifetime & User resettable)
 // Port locking?
+// Watchdog
 
 #include "K7NVH_DC_PDU.h"
 
@@ -96,6 +97,11 @@ int main(void) {
 					// Ctrl-c bail out on partial command
 					INPUT_Clear();
 					break;
+					
+				case 30:
+					// Ctrl-r jump into the bootloader
+					bootloader();
+					break; // We should never get here...
 
 				default:
 					// Normal char buffering

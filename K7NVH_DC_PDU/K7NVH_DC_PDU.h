@@ -199,6 +199,15 @@ USB_ClassInfo_CDC_Device_t VirtualSerial_CDC_Interface = {
 // ~~ Prototypes
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+// Set up a fake function that points to a program address where the bootloader should be
+// based on the part type.
+#ifdef __AVR_ATmega16U2__
+	void (*bootloader)(void) = 0x1800;
+#endif
+#ifdef __AVR_ATmega32U2__
+	void (*bootloader)(void) = 0x3800;
+#endif
+
 static inline void run_lufa(void);
 
 static inline void SPI_begin(void);
