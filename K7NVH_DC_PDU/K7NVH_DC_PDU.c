@@ -3,7 +3,8 @@
 // TODO
 // High water mark stored in EEPROM (Lifetime & User resettable)
 // Port locking?
-// Watchdog
+// Case insensitive
+// Watchdog - Problem exists where reset dumps into DFU, and waits there.
 
 #include "K7NVH_DC_PDU.h"
 
@@ -51,7 +52,6 @@ int main(void) {
 		PORT_CTL(i, EEPROM_Read_Port_Default(i));
 		run_lufa();
 	}
-
 
 	INPUT_Clear();
 
