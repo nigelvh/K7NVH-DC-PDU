@@ -110,9 +110,9 @@ During the driver installation process on Windows 8 operating systems you may en
 
 **NOTE:** If your system uses BitLocker Drive Encryption, you will need your encryption key to gain access to advanced settings to disable driver signature enforcement.
 
-Windows 8 - Navigate to PC settings > General and look for the *Advanced startup* dialog.  Click the **Restart now** button to access the advacnced startup dialog.  Your system will now reboot.
+Windows 8 - Navigate to PC settings > General and look for the *Advanced startup* dialog.  Click the **Restart now** button to access the advanced startup settings.  Your system will now reboot.
 
-Windows 8.1 - Navigate to PC settings > Update and Recovery > Recovery and look for the *Advanced startup* dialog.  Click the **Restart now** button to access the advacnced startup settings.  Your system will now reboot.
+Windows 8.1 - Navigate to PC settings > Update and Recovery > Recovery and look for the *Advanced startup* dialog.  Click the **Restart now** button to access the advanced startup settings.  Your system will now reboot.
 
 After rebooting select Troubleshoot > Advanced options > Startup Settings, click the **Restart** button, your machine will reboot a second time.
 
