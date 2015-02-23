@@ -104,3 +104,18 @@ The PDU board is automatically recognized as a USB serial device under OSX and L
 When first attaching the device to a windows based host, windows will attempt to find a driver and fail. You may then specify a driver. This is provided in K7NVH_PDU.inf.
 
 Once you have installed the driver, the PDU will register as a COM port device under windows, and you may access it with any serial/terminal application of your preference.
+
+### Windows 8 Users
+During the driver installation process on Windows 8 operating systems you may encounter *"The third-party INF does not contain digital signature information"* preventing the installation of the included PDU driver.  The steps below outline the process for disabling driver signature enforcement on Windows 8/8.1 systems.
+
+**NOTE:** If your system uses BitLocker Drive Encryption, you will need your encryption key to gain access to advanced settings to disable driver signature enforcement.
+
+Windows 8 - Navigate to PC settings > General and look for the *Advanced startup* dialog.  Click the **Restart now** button to access the advacnced startup dialog.  Your system will now reboot.
+
+Windows 8.1 - Navigate to PC settings > Update and Recovery > Recovery and look for the *Advanced startup* dialog.  Click the **Restart now** button to access the advacnced startup settings.  Your system will now reboot.
+
+After rebooting select Troubleshoot > Advanced options > Startup Settings, click the **Restart** button, your machine will reboot a second time.
+
+After rebooting a second time you should be presented with the Windows Startup Settings dialog, choose *Disable driver signature enforcement* by pressing number `7` on your keyboard.  Your machine will reboot automatically.
+
+Once rebooted, you should now be able to install the PDU drviers as outlined above.  Once the appropriate driver is selected you will see a Windows Security dialog warning against the installation of the unsigned driver.  Click **Install this driver software anyway** to complete the driver installation.
