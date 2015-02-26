@@ -1,0 +1,107 @@
+#!/usr/bin/php5
+<?php
+	$OIDPARENT = ".1.3.6.1.4.1.8072.2.2048";
+	$REQUEST = $argv[2];
+	$METHOD = $argv[1];
+	
+	$DATA = array(array($OIDPARENT, "", ""),
+					array($OIDPARENT.".1.1.1", "integer", 1),);
+	
+	$DATAFILE = file_get_contents("/tmp/pdu_status.txt");
+	$DATAFILE = explode("\n", $DATAFILE);
+	foreach($DATAFILE as $key => $value){
+		$DATAFILE[$key] = explode(" ", $value);
+		
+		// Remove the V from voltage reading, should leave the port number alone as well.
+		if(isset($DATAFILE[$key][1])) $DATAFILE[$key][1] = preg_replace("/[^0-9\.]/", "", $DATAFILE[$key][1]);
+		
+		// Remove quote marks around the name field.
+		if(isset($DATAFILE[$key][2])) $DATAFILE[$key][2] = preg_replace("/^\"/", "", $DATAFILE[$key][2]);
+		if(isset($DATAFILE[$key][2])) $DATAFILE[$key][2] = preg_replace("/\":$/", "", $DATAFILE[$key][2]);
+		
+		// Parse if port is enabled or disabled
+		if(isset($DATAFILE[$key][3])){
+			if(stripos($DATAFILE[$key][3], "ENABLED") !== FALSE){
+				$DATAFILE[$key][3] = 1;
+			}else{
+				$DATAFILE[$key][3] = 0;
+			}
+		}
+		
+		// Remove unit marks from current and power readings
+		if(isset($DATAFILE[$key][5])) $DATAFILE[$key][5] = preg_replace("/[^0-9\.]/", "", $DATAFILE[$key][5]);
+		if(isset($DATAFILE[$key][7])) $DATAFILE[$key][7] = preg_replace("/[^0-9\.]/", "", $DATAFILE[$key][7]);
+	}
+	
+	// Add SNMP PDU Voltage
+	$DATA[] = array($OIDPARENT.".1.2.0", "", "");
+	$DATA[] = array($OIDPARENT.".1.2.0.1", "integer", 1);
+	$DATA[] = array($OIDPARENT.".1.2.1.1.1", "string", $DATAFILE[0][1]);
+	// Add SNMP Port Index
+	$DATA[] = array($OIDPARENT.".1.3.0", "", "");
+	for($i = 1; $i <= 8; $i++){
+		if(isset($DATAFILE[$i][1])) $DATA[] = array($OIDPARENT.".1.3.0.".$i.".1", "integer", $i);
+	}
+	// Add SNMP Names
+	$DATA[] = array($OIDPARENT.".1.3.1", "", "");
+	for($i = 1; $i <= 8; $i++){
+		if(isset($DATAFILE[$i][2])) $DATA[] = array($OIDPARENT.".1.3.1.".$i.".1", "string", $DATAFILE[$i][2]);
+	}
+	// Add SNMP Port Status
+	$DATA[] = array($OIDPARENT.".1.3.2", "", "");
+	for($i = 1; $i <= 8; $i++){
+		if(isset($DATAFILE[$i][3])) $DATA[] = array($OIDPARENT.".1.3.2.".$i.".1", "integer", $DATAFILE[$i][3]);
+	}
+	// Add SNMP Port Current
+	$DATA[] = array($OIDPARENT.".1.3.3", "", "");
+	for($i = 1; $i <= 8; $i++){
+		if(isset($DATAFILE[$i][5])) $DATA[] = array($OIDPARENT.".1.3.3.".$i.".1", "string", $DATAFILE[$i][5]);
+	}
+	// Add SNMP Port Power
+	$DATA[] = array($OIDPARENT.".1.3.4", "", "");
+	for($i = 1; $i <= 8; $i++){
+		if(isset($DATAFILE[$i][7])) $DATA[] = array($OIDPARENT.".1.3.4.".$i.".1", "string", $DATAFILE[$i][7]);
+	}
+
+	//print_r($DATAFILE);
+	//exit(0);
+	
+	// If this was a SET request, just silently ignore it.
+	if($METHOD == "-s"){
+		exit(0);
+	}
+	
+	// Handle GETNEXT request
+	if($METHOD == "-n"){
+		// Determine next value and dump it.
+		foreach($DATA as $key => $value){
+			if($value[0] == $REQUEST){
+				$search = $key;
+				break;
+			}
+		}
+		if($search !== FALSE){
+			$search++;
+		}
+		if($search == count($DATA)){
+			$search == FALSE;
+		}
+	}else{ // Handle other (GET) requests
+		foreach($DATA as $key => $value){
+			if($value[0] == $REQUEST){
+				$search = $key;
+				break;
+			}
+		}
+	}
+	
+	// Return format is OID\nTYPE(string)\nVALUE\n";
+	if($search !== FALSE){
+		echo $DATA[$search][0]."\n";
+		echo $DATA[$search][1]."\n";
+		echo $DATA[$search][2]."\n";
+		exit(0);
+	}
+	
+	exit(0);
+?>
