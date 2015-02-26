@@ -6,6 +6,8 @@ These are some example graph templates (with (in theory) dependencies included) 
 ## k7nvh_pdu.xml
 This xml file defines how to query the indexed SNMP data. Usually this file gets installed in a default cacti folder for SNMP queries. On my Ubuntu install, this was located at /usr/share/cacti/resource/snmp_queries
 
+This xml file is based on the existing configs that ship with cacti, as well as the information available in the cacti manual at http://docs.cacti.net/manual:087:3a_advanced_topics.3b_snmp_data_query_walkthrough
+
 ## cacti_graph_template_pdu_-_port_current.xml
 ## cacti_graph_template_pdu_-_port_power.xml
 ## cacti_graph_template_pdu_-_voltage.xml
