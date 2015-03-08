@@ -4,7 +4,7 @@
 DriverPackageDisplayName="K7NVH DC PDU USB Driver"
 ManufacturerName="K7NVH"
 ServiceName="USB RS-232 Emulation Driver"
-pdu.name="K7NVH DC PDU"
+pdu.name="K7NVH DC PDU V1.1"
 
 [DefaultInstall]
 CopyINF=K7NVH_PDU.inf
@@ -15,7 +15,7 @@ ClassGuid={4D36E978-E325-11CE-BFC1-08002BE10318}
 Signature="$Windows NT$"
 Provider=%ManufacturerName%
 DriverPackageDisplayName=%DriverPackageDisplayName%
-DriverVer=02/06/2015,1.0.0.1
+DriverVer=03/08/2015,1.1.0.0
 
 [Manufacturer]
 %ManufacturerName%=DeviceList, NTamd64, NTia64

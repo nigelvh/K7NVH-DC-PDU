@@ -1,6 +1,7 @@
 /* (c) 2015 Nigel Vander Houwen */
 //
 // TODO
+// Fix ADC reading from second ADC for input voltage, temperature, and alt inputs
 // High water mark stored in EEPROM (Lifetime & User resettable)
 // Port locking?
 // Case insensitive
@@ -262,23 +263,6 @@ static inline void INPUT_Parse(void) {
 			return;
 		}
 	}
-	// SETSENSE - Set the Port 8 Sense mode
-	if (strncmp_P(DATA_IN, STR_Command_SETSENSE, 8) == 0) {
-		char *str = DATA_IN + 8;
-		while (*str == ' ' || *str == '\t') str++;
-		if (*str == 'V') {
-			EEPROM_Write_P8_Sense(1);
-			printPGMStr(STR_Port_8_Sense);
-			printPGMStr(PSTR("VOLTAGE"));
-			return;
-		}
-		if (*str == 'I') {
-			EEPROM_Write_P8_Sense(0);
-			printPGMStr(STR_Port_8_Sense);
-			printPGMStr(PSTR("CURRENT"));
-			return;
-		}
-	}
 	// SETVREF - Set the VREF voltage and store in EEPROM to correct voltage readings.
 	if (strncmp_P(DATA_IN, STR_Command_SETVREF, 7) == 0) {
 		uint16_t temp_set_vref = atoi(DATA_IN + 7);
@@ -290,7 +274,7 @@ static inline void INPUT_Parse(void) {
 			return;
 		}
 	}
-	// SETVDIV - Set the VREF voltage and store in EEPROM to correct voltage readings.
+	// SETVDIV - Set the VDIV and store in EEPROM to correct voltage readings.
 	if (strncmp_P(DATA_IN, STR_Command_SETVDIV, 7) == 0) {
 		uint16_t temp_set_vdiv = atoi(DATA_IN + 7);
 		if (temp_set_vdiv >= VDIV_MIN && temp_set_vdiv <= VDIV_MAX){
@@ -351,25 +335,25 @@ static inline void INPUT_Parse(void) {
 // Print a summary of all ports status'
 static inline void PRINT_Status(void) {
 	float voltage, current;
-	if (EEPROM_Read_P8_Sense() == 1) {
-		voltage = ADC_Read_Voltage();
-		printPGMStr(PSTR("\r\nVoltage: "));
-		fprintf(&USBSerialStream, "%.2fV", voltage);
-	}
+	voltage = ADC_Read_Voltage();
+	printPGMStr(PSTR("\r\nVoltage: "));
+	fprintf(&USBSerialStream, "%.2fV", voltage);
+	
 	for(uint8_t i = 0; i < PORT_CNT; i++) {
 		printPGMStr(STR_NR_Port);
+		
 		char temp_name[16];
 		EEPROM_Read_Port_Name(i, temp_name);
 		fprintf(&USBSerialStream, "%i \"%s\": ", i+1, temp_name);
+		
 		if (PORT_STATE[i] & 0b00000001) { printPGMStr(STR_Enabled); } else { printPGMStr(STR_Disabled); }
-		if (i == 7 && EEPROM_Read_P8_Sense() == 1) break;
+		
 		current = ADC_Read_Current(i);
 		printPGMStr(PSTR(" Current: "));
 		fprintf(&USBSerialStream, "%.2fA ", current);
-		if (EEPROM_Read_P8_Sense() == 1) {
-			printPGMStr(PSTR("Power: "));
-			fprintf(&USBSerialStream, "%.1fW ", (voltage * current));
-		}
+		printPGMStr(PSTR("Power: "));
+		fprintf(&USBSerialStream, "%.1fW ", (voltage * current));
+		
 		if (PORT_STATE[i] & 0b00000010) { printPGMStr(STR_Overload); }
 	}
 }
@@ -438,10 +422,6 @@ static inline void LED_CTL(uint8_t led, uint8_t state) {
 // Checks a port against the stored current limit. Returns 0 if below limits, and 1 if
 // the port has exceeded current limits.
 static inline uint8_t PORT_Check_Current_Limit(uint8_t port){
-	// If we were asked for port 8, but we're sensing voltage, we don't know what the
-	// current flow is. Return 0.
-	if (port == 7 && EEPROM_Read_P8_Sense() == 1) { return 0; }
-	
 	// Check for above threshold current flow, and return 1.
 	if (ADC_Read_Current(port) > ((float)EEPROM_Read_Port_Limit(port) / 10.0)) { return 1; }
 	
@@ -470,8 +450,8 @@ static inline void EEPROM_Write_Port_Default(uint8_t port, uint8_t portdef) {
 // Read the stored reference voltage from EEPROM
 static inline float EEPROM_Read_REF_V(void) {
 	float REF_V = eeprom_read_float((float*)(EEPROM_OFFSET_REF_V));
-	// If the value seems out of range (uninitialized), default it to 4.2
-	if (REF_V < 4.0 || REF_V > 4.4 || isnan(REF_V)) REF_V = 4.2;
+	// If the value seems out of range (uninitialized), default it to 4.5
+	if (REF_V < 4.3 || REF_V > 4.7 || isnan(REF_V)) REF_V = 4.5;
 	return REF_V;
 }
 // Write the reference voltage to EEPROM
@@ -482,25 +462,13 @@ static inline void EEPROM_Write_REF_V(float reference) {
 // Read the stored reference voltage from EEPROM
 static inline float EEPROM_Read_DIV_V(void) {
 	float DIV_V = eeprom_read_float((float*)(EEPROM_OFFSET_DIV_V));
-	// If the value seems out of range (uninitialized), default it to 10.1
-	if (DIV_V < 8.0 || DIV_V > 12.0 || isnan(DIV_V)) DIV_V = 10.1;
+	// If the value seems out of range (uninitialized), default it to 11
+	if (DIV_V < 7.0 || DIV_V > 15.0 || isnan(DIV_V)) DIV_V = 11;
 	return DIV_V;
 }
 // Write the reference voltage to EEPROM
 static inline void EEPROM_Write_DIV_V(float div) {
 	eeprom_update_float((float*)(EEPROM_OFFSET_DIV_V), div);
-}
-
-// Read the stored Port 8 Sense mode
-// 0 = Current, 1 = Voltage
-static inline uint8_t EEPROM_Read_P8_Sense(void) {
-	uint8_t PORT8_SENSE = eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_P8_SENSE));
-	if (PORT8_SENSE > 1) PORT8_SENSE = 0;
-	return PORT8_SENSE;
-}
-// Write the Port 8 Sense mode to EEPROM
-static inline void EEPROM_Write_P8_Sense(uint8_t mode) {
-	eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_P8_SENSE), mode);
 }
 
 // Read PCYCLE_TIME from EEPROM
@@ -574,9 +542,6 @@ static inline void EEPROM_Dump_Vars(void) {
 	// Read DIV_V
 	printPGMStr(STR_VDIV);
 	fprintf(&USBSerialStream, "%.1f %.1f", eeprom_read_float((float*)(EEPROM_OFFSET_DIV_V)), EEPROM_Read_DIV_V());
-	// Read P8_SENSE
-	printPGMStr(STR_Port_8_Sense);
-	fprintf(&USBSerialStream, "%i", eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_P8_SENSE)));
 	// Read Port Cycle Time
 	printPGMStr(STR_PCYCLE_Time);
 	fprintf(&USBSerialStream, "%iS", eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_CYCLE_TIME)));
@@ -601,9 +566,9 @@ static inline void EEPROM_Dump_Vars(void) {
 
 // Read current flow on a given port
 static inline float ADC_Read_Current(uint8_t port) {
-	float voltage = (ADC_Read_Raw(port) * EEPROM_Read_REF_V() / 1024) / 7.8;
+	float voltage = (ADC_Read_Raw(port) * EEPROM_Read_REF_V() / 1024) / 11;
 	if (voltage < 0.002) voltage = 0.0; // Ignore the lowest voltages so we don't falsely say there's current where there isn't.
-	return (voltage / 0.1);
+	return (voltage / 0.05);
 }
 
 // Read input voltage on ADC channel 8 if not measuring current
@@ -613,11 +578,11 @@ static inline float ADC_Read_Voltage(void) {
 
 // Return raw counts from the ADC
 static inline uint16_t ADC_Read_Raw(uint8_t port) {
-	PORTB &= ~(1 << SPI_SS);
+	PORTB &= ~(1 << SPI_SS_PORTS);
 	SPI_transfer(0x01); // Start bit
 	uint8_t temp1 = SPI_transfer(ADC_Ports[port]); // Single ended, input number, clocking in 4 bits
 	uint8_t temp2 = SPI_transfer(0x00); // Clocking in 8 bits
-	PORTB |= (1 << SPI_SS);
+	PORTB |= (1 << SPI_SS_PORTS);
 
 	uint16_t adc_counts = ((temp1 & 0b00000011) << 8) | temp2;
 
@@ -631,8 +596,8 @@ static inline uint16_t ADC_Read_Raw(uint8_t port) {
 // Set up the SPI registers to enable the SPI hardware
 static inline void SPI_begin(void) {
 	// Set up SPI pins
-	DDRB |= (1 << SPI_SS)|(1 << SPI_SCK)|(1 << SPI_MOSI);
-	PORTB |= (1 << SPI_SS);
+	DDRB |= (1 << SPI_SS_PORTS)|(1 << SPI_SCK)|(1 << SPI_MOSI);
+	PORTB |= (1 << SPI_SS_PORTS);
 	PORTB &= ~(1 << SPI_SCK);
 
 	// Enable SPI Master bit in the register

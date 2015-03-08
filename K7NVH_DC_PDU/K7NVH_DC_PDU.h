@@ -30,8 +30,9 @@
 // storage of color codes/modified strings.
 #define ENABLECOLORS
 
-#define SOFTWAREVERS "\r\nK7NVH DC PDU V1.0\r\n"
+#define SOFTWAREVERS "\r\nK7NVH DC PDU V1.1\r\n"
 #define PORT_CNT    8
+#define INPUT_CNT	6
 #define DATA_BUFF_LEN    32
 
 #define SPI_CLOCK_DIV4 0x00
@@ -52,7 +53,8 @@
 #define SPI_2XCLOCK_MASK 0x01  // SPI2X = bit 0 on SPSR
 
 // SPI pins
-#define SPI_SS PB0
+#define SPI_SS_PORTS PB0
+#define SPI_SS_INPUTS PD6
 #define SPI_SCK PB1
 #define SPI_MOSI PB2
 #define SPI_MISO PB3
@@ -68,21 +70,21 @@
 #define P8EN PC4
 
 // LED1 = Green, LED2 = Red
-#define LED1 PD4
-#define LED2 PD5
+#define LED1 PD0
+#define LED2 PD1
 
 // Limits
 #define PCYCLE_MAX_TIME 30 // Seconds
-#define VREF_MAX 4400 // 4.4V * 1000
-#define VREF_MIN 4000 // 4.0V * 1000
-#define VDIV_MAX 120 // 12.0
-#define VDIV_MIN 80 // 8.0
+#define VREF_MAX 4700 // 4.7V * 1000
+#define VREF_MIN 4300 // 4.3V * 1000
+#define VDIV_MAX 150 // 15.0
+#define VDIV_MIN 70 // 7.0
 #define LIMIT_MAX 100 // Stored as amps*10 so 50==5.0A
 
 // EEPROM Offsets
 #define EEPROM_OFFSET_PORT_DEFAULTS 0 // 8 bytes at offset 0
 #define EEPROM_OFFSET_REF_V 8 // 4 bytes at offset 8
-#define EEPROM_OFFSET_P8_SENSE 12 // 1 byte at offset 12
+
 #define EEPROM_OFFSET_CYCLE_TIME 13 // 1 byte at offset 13
 
 #define EEPROM_OFFSET_LIMIT 16 // 8 Bytes at offset 16
@@ -138,7 +140,6 @@ const char STR_Help_Info[] PROGMEM = "\r\nVisit https://github.com/nigelvh/K7NVH
 const char STR_Backspace[] PROGMEM = "\x1b[D \x1b[D";
 const char STR_NR_Port[] PROGMEM = "\r\nPORT ";
 const char STR_Port_Default[] PROGMEM = "\r\nPORT DEFAULT ";
-const char STR_Port_8_Sense[] PROGMEM = "\r\nPORT 8 SENSE ";
 const char STR_PCYCLE_Time[] PROGMEM = "\r\nPCYCLE TIME: ";
 const char STR_Port_Limit[] PROGMEM = "\r\nPORT LIMIT: ";
 const char STR_VREF[] PROGMEM = "\r\nVREF: ";
@@ -153,7 +154,6 @@ const char STR_Command_POFF[] PROGMEM = "POFF";
 const char STR_Command_PCYCLE[] PROGMEM = "PCYCLE";
 const char STR_Command_SETCYCLE[] PROGMEM = "SETCYCLE";
 const char STR_Command_SETDEF[] PROGMEM = "SETDEF";
-const char STR_Command_SETSENSE[] PROGMEM = "SETSENSE";
 const char STR_Command_SETVREF[] PROGMEM = "SETVREF";
 const char STR_Command_SETVDIV[] PROGMEM = "SETVDIV";
 const char STR_Command_SETNAME[] PROGMEM = "SETNAME";
@@ -161,8 +161,12 @@ const char STR_Command_SETLIMIT[] PROGMEM = "SETLIMIT";
 
 // Port to ADC Address look up table
 const uint8_t ADC_Ports[PORT_CNT] = \
-		{0b10010000, 0b10000000, 0b10110000, 0b10100000, \
-		 0b11010000, 0b11000000, 0b11110000, 0b11100000};
+		{0b10000000, 0b10010000, 0b10100000, 0b10110000, \
+		 0b11000000, 0b11010000, 0b11100000, 0b11110000};
+// Input to ADC Address look up table
+const uint8_t ADC_Inputs[INPUT_CNT] = \
+		{0b10000000, 0b10010000, 0b10100000, 0b11010000, \
+		 0b11100000, 0b11110000};
 
 // State Variables
 ps_set PORT_STATE[PORT_CNT];
@@ -228,8 +232,6 @@ static inline float EEPROM_Read_REF_V(void);
 static inline void EEPROM_Write_REF_V(float reference);
 static inline float EEPROM_Read_DIV_V(void);
 static inline void EEPROM_Write_DIV_V(float div);
-static inline uint8_t EEPROM_Read_P8_Sense(void);
-static inline void EEPROM_Write_P8_Sense(uint8_t mode);
 static inline uint8_t EEPROM_Read_PCycle_Time(void);
 static inline void EEPROM_Write_PCycle_Time(uint8_t time);
 static inline void EEPROM_Read_Port_Name(uint8_t port, char *str);

@@ -11,7 +11,7 @@
 
 # Run "make help" for target help.
 
-MCU          = atmega16u2
+MCU          = atmega32u2
 ARCH         = AVR8
 BOARD        = USER
 F_CPU        = 1000000
