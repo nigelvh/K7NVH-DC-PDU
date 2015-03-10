@@ -1,7 +1,8 @@
 /* (c) 2015 Nigel Vander Houwen */
 //
 // TODO
-// Fix ADC reading from second ADC for input voltage, temperature, and alt inputs
+// Implement reading from alt inputs
+// Implement per port current reading adjust (like setvdiv)
 // High water mark stored in EEPROM (Lifetime & User resettable)
 // Port locking?
 // Case insensitive
@@ -153,6 +154,10 @@ int main(void) {
 		}
 		if (error == 0) LED_CTL(1, 0);
 		
+
+//		fprintf(&USBSerialStream, "%i - %i - %i - %i - %i - %i - %i - %i\r\n", ADC_Read_Raw(0, 1), ADC_Read_Raw(1, 1), ADC_Read_Raw(2, 1), ADC_Read_Raw(3, 1), ADC_Read_Raw(4, 1), ADC_Read_Raw(5, 1), ADC_Read_Raw(6, 1), ADC_Read_Raw(7, 1) );
+//		_delay_ms(1000);
+
 		// Keep the LUFA USB stuff fed regularly.
 		run_lufa();
 	}
@@ -338,6 +343,8 @@ static inline void PRINT_Status(void) {
 	voltage = ADC_Read_Voltage();
 	printPGMStr(PSTR("\r\nVoltage: "));
 	fprintf(&USBSerialStream, "%.2fV", voltage);
+	printPGMStr(PSTR("\tTemperature: "));
+	fprintf(&USBSerialStream, "%.0fC", ADC_Read_Temperature());
 	
 	for(uint8_t i = 0; i < PORT_CNT; i++) {
 		printPGMStr(STR_NR_Port);
@@ -566,27 +573,40 @@ static inline void EEPROM_Dump_Vars(void) {
 
 // Read current flow on a given port
 static inline float ADC_Read_Current(uint8_t port) {
-	float voltage = (ADC_Read_Raw(port) * EEPROM_Read_REF_V() / 1024) / 11;
-	if (voltage < 0.002) voltage = 0.0; // Ignore the lowest voltages so we don't falsely say there's current where there isn't.
+	float voltage = (ADC_Read_Raw(port, 0) * EEPROM_Read_REF_V() / 1024) / 11;
+	if (voltage < 0.001) voltage = 0.0; // Ignore the lowest voltages so we don't falsely say there's current where there isn't.
 	return (voltage / 0.05);
 }
 
-// Read input voltage on ADC channel 8 if not measuring current
+// Read input voltage
 static inline float ADC_Read_Voltage(void) {
-	return ((ADC_Read_Raw(7)* EEPROM_Read_REF_V() / 1024) * EEPROM_Read_DIV_V());
+	return ((ADC_Read_Raw(6, 1)* EEPROM_Read_REF_V() / 1024) * EEPROM_Read_DIV_V());
+}
+
+// Read temperature
+static inline float ADC_Read_Temperature(void) {
+	return (((ADC_Read_Raw(7, 1) * EEPROM_Read_REF_V() / 1024) - 0.4) / 0.0195);
 }
 
 // Return raw counts from the ADC
-static inline uint16_t ADC_Read_Raw(uint8_t port) {
-	PORTB &= ~(1 << SPI_SS_PORTS);
-	SPI_transfer(0x01); // Start bit
-	uint8_t temp1 = SPI_transfer(ADC_Ports[port]); // Single ended, input number, clocking in 4 bits
-	uint8_t temp2 = SPI_transfer(0x00); // Clocking in 8 bits
-	PORTB |= (1 << SPI_SS_PORTS);
+static inline uint16_t ADC_Read_Raw(uint8_t port, uint8_t adc) {
+	uint8_t temp1,temp2;
+	
+	if(adc == 0){
+		PORTB &= ~(1 << SPI_SS_PORTS);
+		SPI_transfer(0x01); // Start bit
+		temp1 = SPI_transfer(ADC_Ports[port]); // Single ended, input number, clocking in 4 bits
+		temp2 = SPI_transfer(0x00); // Clocking in 8 bits.
+		PORTB |= (1 << SPI_SS_PORTS);
+	}else{
+		PORTD &= ~(1 << SPI_SS_INPUTS);
+		SPI_transfer(0x01); // Start bit
+		temp1 = SPI_transfer(ADC_Inputs[port]); // Single ended, input number, clocking in 4 bits
+		temp2 = SPI_transfer(0x00); // Clocking in 8 bits.
+		PORTD |= (1 << SPI_SS_INPUTS);
+	}
 
-	uint16_t adc_counts = ((temp1 & 0b00000011) << 8) | temp2;
-
-	return adc_counts;
+	return (uint16_t)((temp1 & 0b00000011) << 8) | temp2;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -597,7 +617,9 @@ static inline uint16_t ADC_Read_Raw(uint8_t port) {
 static inline void SPI_begin(void) {
 	// Set up SPI pins
 	DDRB |= (1 << SPI_SS_PORTS)|(1 << SPI_SCK)|(1 << SPI_MOSI);
+	DDRD |= (1 << SPI_SS_INPUTS);
 	PORTB |= (1 << SPI_SS_PORTS);
+	PORTD |= (1 << SPI_SS_INPUTS);
 	PORTB &= ~(1 << SPI_SCK);
 
 	// Enable SPI Master bit in the register

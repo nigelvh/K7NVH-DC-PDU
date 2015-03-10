@@ -32,7 +32,7 @@
 
 #define SOFTWAREVERS "\r\nK7NVH DC PDU V1.1\r\n"
 #define PORT_CNT    8
-#define INPUT_CNT	6
+#define INPUT_CNT	8
 #define DATA_BUFF_LEN    32
 
 #define SPI_CLOCK_DIV4 0x00
@@ -160,13 +160,15 @@ const char STR_Command_SETNAME[] PROGMEM = "SETNAME";
 const char STR_Command_SETLIMIT[] PROGMEM = "SETLIMIT";
 
 // Port to ADC Address look up table
+// PORT 1,2,3,4,5,6,7,8
 const uint8_t ADC_Ports[PORT_CNT] = \
 		{0b10000000, 0b10010000, 0b10100000, 0b10110000, \
 		 0b11000000, 0b11010000, 0b11100000, 0b11110000};
 // Input to ADC Address look up table
+// EXT1, EXT2, EXT3, EXT4, EXT5, EXT6, INPUT, TEMP
 const uint8_t ADC_Inputs[INPUT_CNT] = \
 		{0b10000000, 0b10010000, 0b10100000, 0b11010000, \
-		 0b11100000, 0b11110000};
+		 0b11100000, 0b11110000, 0b10110000, 0b11000000};
 
 // State Variables
 ps_set PORT_STATE[PORT_CNT];
@@ -242,7 +244,8 @@ static inline void EEPROM_Dump_Vars(void);
 
 static inline float ADC_Read_Current(uint8_t port);
 static inline float ADC_Read_Voltage(void);
-static inline uint16_t ADC_Read_Raw(uint8_t port);
+static inline float ADC_Read_Temperature(void);
+static inline uint16_t ADC_Read_Raw(uint8_t port, uint8_t adc);
 
 static inline void printPGMStr(PGM_P s);
 static inline void PRINT_Status(void);
