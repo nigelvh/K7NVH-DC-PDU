@@ -101,7 +101,7 @@ int main(void) {
 					break;
 					
 				case 30:
-					// Ctrl-r jump into the bootloader
+					// Ctrl-^ jump into the bootloader
 					bootloader();
 					break; // We should never get here...
 
