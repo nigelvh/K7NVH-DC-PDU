@@ -16,6 +16,20 @@ The 'HELP' command will print a short message referencing the project page conta
 ### STATUS
 The 'STATUS' command is designed to give an overview of the running state of each port on the PDU. The port numbers, any configured custom port names, and port state (ENABLED/DISABLED) will be displayed. Input voltage, board temperature, and per port current and power values will be shown. Voltages sensed on the auxiliary inputs will also be displayed. Note that unconnected auxiliary inputs may float and show voltages on unconnected pins.
 
+```plain
+> STATUS
+Voltage: 13.76V Temperature: 25C
+PORT 1 "": ENABLED Current: 0.00A Power: 0.0W 
+PORT 2 "": ENABLED Current: 0.00A Power: 0.0W 
+PORT 3 "": ENABLED Current: 0.00A Power: 0.0W 
+PORT 4 "": ENABLED Current: 0.00A Power: 0.0W 
+PORT 5 "": ENABLED Current: 0.00A Power: 0.0W 
+PORT 6 "": ENABLED Current: 0.00A Power: 0.0W 
+PORT 7 "": ENABLED Current: 0.00A Power: 0.0W 
+PORT 8 "": ENABLED Current: 0.00A Power: 0.0W 
+AUX 1:0.01V 2:0.04V 3:0.01V 4:0.02V 5:0.03V 6:0.00V
+```
+
 ### PON
 The 'PON' command is used to enable one or more ports on the PDU.
 

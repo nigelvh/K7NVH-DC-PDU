@@ -159,10 +159,6 @@ int main(void) {
 		}
 		if (error == 0) LED_CTL(1, 0);
 		
-
-//		fprintf(&USBSerialStream, "%i - %i - %i - %i - %i - %i - %i - %i\r\n", ADC_Read_Raw(0, 1), ADC_Read_Raw(1, 1), ADC_Read_Raw(2, 1), ADC_Read_Raw(3, 1), ADC_Read_Raw(4, 1), ADC_Read_Raw(5, 1), ADC_Read_Raw(6, 1), ADC_Read_Raw(7, 1) );
-//		_delay_ms(1000);
-
 		// Keep the LUFA USB stuff fed regularly.
 		run_lufa();
 	}
@@ -403,7 +399,7 @@ static inline void PRINT_Status(void) {
 	// Aux Inputs
 	printPGMStr(PSTR("\r\nAUX "));
 	for (uint8_t j = 0; j < 6; j++) {
-		fprintf(&USBSerialStream, "%i: %.2fV, ", j+1, ADC_Read_Raw_Voltage(j, 1));
+		fprintf(&USBSerialStream, "%i:%.2fV ", j+1, ADC_Read_Raw_Voltage(j, 1));
 	}
 }
 
