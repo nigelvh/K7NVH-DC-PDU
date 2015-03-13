@@ -2,7 +2,6 @@
 //
 // TODO
 // Implement reading from alt inputs
-// Implement per port current reading adjust (like setvdiv)
 // High water mark stored in EEPROM (Lifetime & User resettable)
 // Port locking?
 // Case insensitive
