@@ -2,6 +2,7 @@
 //
 // TODO
 // Implement reading from alt inputs
+// Implement programmatical status output
 // High water mark stored in EEPROM (Lifetime & User resettable)
 // Port locking?
 // Case insensitive
