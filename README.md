@@ -14,11 +14,7 @@ This is the source code to be compiled by AVR-GCC for installation on the device
 The 'HELP' command will print a short message referencing the project page containing documentation.
 
 ### STATUS
-The 'STATUS' command is designed to give an overview of the running state of each port on the PDU. The port numbers, any configured custom port names, and port state (ENABLED/DISABLED) will be displayed.
-
-If the PDU is configured for Voltage Sense, 'STATUS' will display the voltage on the INPUT port, as well as the current (amps) and power (watts) usage on ports 1 through 7.
-
-If the PDU is configured for Current Sense, 'STATUS' will display the current (amps) usage on ports 1 through 8.
+The 'STATUS' command is designed to give an overview of the running state of each port on the PDU. The port numbers, any configured custom port names, and port state (ENABLED/DISABLED) will be displayed. Input voltage, board temperature, and per port current and power values will be shown. Voltages sensed on the auxiliary inputs will also be displayed. Note that unconnected auxiliary inputs may float and show voltages on unconnected pins.
 
 ### PON
 The 'PON' command is used to enable one or more ports on the PDU.
