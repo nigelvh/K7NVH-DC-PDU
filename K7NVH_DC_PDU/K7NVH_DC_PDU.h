@@ -249,9 +249,10 @@ static inline void EEPROM_Write_Port_Limit(uint8_t port, uint8_t limit);
 static inline void EEPROM_Dump_Vars(void);
 static inline void EEPROM_Reset(void);
 
-static inline float ADC_Read_Current(uint8_t port);
-static inline float ADC_Read_Voltage(void);
+static inline float ADC_Read_Port_Current(uint8_t port);
+static inline float ADC_Read_Input_Voltage(void);
 static inline float ADC_Read_Temperature(void);
+static inline float ADC_Read_Raw_Voltage(uint8_t port, uint8_t adc);
 static inline uint16_t ADC_Read_Raw(uint8_t port, uint8_t adc);
 
 static inline void printPGMStr(PGM_P s);

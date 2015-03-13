@@ -366,28 +366,45 @@ static inline void INPUT_Parse(void) {
 // Print a summary of all ports status'
 static inline void PRINT_Status(void) {
 	float voltage, current;
-	voltage = ADC_Read_Voltage();
+	
+	// Voltage
+	voltage = ADC_Read_Input_Voltage();
 	printPGMStr(PSTR("\r\nVoltage: "));
 	fprintf(&USBSerialStream, "%.2fV", voltage);
+	
+	// Temperature
 	printPGMStr(PSTR("\tTemperature: "));
 	fprintf(&USBSerialStream, "%.0fC", ADC_Read_Temperature());
 	
+	// Ports
 	for(uint8_t i = 0; i < PORT_CNT; i++) {
+		// PORT
 		printPGMStr(STR_NR_Port);
 		
+		// Number and Name
 		char temp_name[16];
 		EEPROM_Read_Port_Name(i, temp_name);
 		fprintf(&USBSerialStream, "%i \"%s\": ", i+1, temp_name);
 		
+		// Enabled/Disabled
 		if (PORT_STATE[i] & 0b00000001) { printPGMStr(STR_Enabled); } else { printPGMStr(STR_Disabled); }
 		
-		current = ADC_Read_Current(i);
+		// Current reading
+		current = ADC_Read_Port_Current(i);
 		printPGMStr(PSTR(" Current: "));
 		fprintf(&USBSerialStream, "%.2fA ", current);
+		// Power reading
 		printPGMStr(PSTR("Power: "));
 		fprintf(&USBSerialStream, "%.1fW ", (voltage * current));
 		
+		// Overload?
 		if (PORT_STATE[i] & 0b00000010) { printPGMStr(STR_Overload); }
+	}
+	
+	// Aux Inputs
+	printPGMStr(PSTR("\r\nAUX "));
+	for (uint8_t j = 0; j < 6; j++) {
+		fprintf(&USBSerialStream, "%i: %.2fV, ", j+1, ADC_Read_Raw_Voltage(j, 1));
 	}
 }
 
@@ -456,7 +473,7 @@ static inline void LED_CTL(uint8_t led, uint8_t state) {
 // the port has exceeded current limits.
 static inline uint8_t PORT_Check_Current_Limit(uint8_t port){
 	// Check for above threshold current flow, and return 1.
-	if (ADC_Read_Current(port) > ((float)EEPROM_Read_Port_Limit(port) / 10.0)) { return 1; }
+	if (ADC_Read_Port_Current(port) > ((float)EEPROM_Read_Port_Limit(port) / 10.0)) { return 1; }
 	
 	// Else return 0;
 	return 0;
@@ -621,20 +638,25 @@ static inline void EEPROM_Reset(void) {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // Read current flow on a given port
-static inline float ADC_Read_Current(uint8_t port) {
-	float voltage = (ADC_Read_Raw(port, 0) * EEPROM_Read_REF_V() / 1024) / EEPROM_Read_I_CAL(port);
+static inline float ADC_Read_Port_Current(uint8_t port) {
+	float voltage = ADC_Read_Raw_Voltage(port, 0) / EEPROM_Read_I_CAL(port);
 	if (voltage < 0.001) voltage = 0.0; // Ignore the lowest voltages so we don't falsely say there's current where there isn't.
 	return (voltage / 0.05);
 }
 
 // Read input voltage
-static inline float ADC_Read_Voltage(void) {
-	return ((ADC_Read_Raw(6, 1)* EEPROM_Read_REF_V() / 1024) * EEPROM_Read_V_CAL());
+static inline float ADC_Read_Input_Voltage(void) {
+	return (ADC_Read_Raw_Voltage(6, 1) * EEPROM_Read_V_CAL());
 }
 
 // Read temperature
 static inline float ADC_Read_Temperature(void) {
-	return (((ADC_Read_Raw(7, 1) * EEPROM_Read_REF_V() / 1024) - 0.4) / 0.0195);
+	return ((ADC_Read_Raw_Voltage(7, 1) - 0.4) / 0.0195);
+}
+
+// Return the adc reading as a voltage referenced to REF_V
+static inline float ADC_Read_Raw_Voltage(uint8_t port, uint8_t adc) {
+	return (ADC_Read_Raw(port, adc) * (EEPROM_Read_REF_V() / 1024));
 }
 
 // Return raw counts from the ADC
