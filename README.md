@@ -79,19 +79,19 @@ The 'SETVREF' command is used only during calibration of the PDU. Measuring the 
 
 For example, to set the voltage reference calibration to 4.2V, the following are valid 'SETVREF' syntaxes. `SETVREF4200` `SETVREF 4200`
 
-### SETVDIV
-The 'SETVDIV' command is used only during calibration of the PDU. Measuring the voltage divider on the input port with an accurate voltage meter, calibration of voltage supply measurements can be made.
+### SETVCAL
+The 'SETVCAL' command is used only during calibration of the PDU. Measuring the voltage divider on the input port with an accurate voltage meter, calibration of voltage supply measurements can be made.
 
-'SETVDIV' is a unitless multiplier, specified in VALUE*10, and accepts values from 120 to 80 (12.0X to 8.0X). The default value if uncalibrated is the dividers's nominal voltage division of 10.1X.
+'SETVCAL' is a unitless multiplier, specified in VALUE*10, and accepts values from 150 to 70 (15.0X to 7.0X). The default value if uncalibrated is the dividers's nominal voltage division of 11.0X.
 
-For example, to set the divider reference calibration to 10.1X, the following are valid 'SETVDIV' syntaxes. `SETVREF101` `SETVREF 101`
+For example, to set the divider reference calibration to 11.0X, the following are valid 'SETVCAL' syntaxes. `SETVCAL110` `SETVCAL 110`
 
-### SETSENSE
-The 'SETSENSE' command is used only after having changed the SENSE solder jumper on the PDU board, selecting the sense channel for Port 8 between sensing INPUT voltage, or the current flowing through Port 8.
+### SETICAL
+The 'SETICAL' command is used only during calibration of the PDU. Measuring the voltage divider on the current sense op amp for a given port with an accurate meter, calibration of current sense measurements can be made.
 
-'SETSENSE' is set with either I for current, or V for voltage. The default value will assume the jumper is set to measure current.
+'SETICAL' is a unitless multiplier, specified in VALUE*10, and accepts values from 160 to 60 (16.0X to 6.0X). The default value if uncalibrated is the dividers's nominal voltage division of 11.0X.
 
-For example, to set the sensing mode to INPUT voltage, the following are valid 'SETSENSE' syntaxes. `SETSENSEV` `SETSENSE V`
+For example, to set the calibration on port 1 to 11.0X, the following is valid 'SETICAL' syntax. `SETICAL 1 110`
 
 ### EEPROMDUMP
 The 'EEPROMDUMP' command is used only for debugging PDU stored state. It will output a variety of values stored in various locations in EEPROM memory, and may not be formatted for easy understanding.

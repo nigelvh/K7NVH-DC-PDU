@@ -99,6 +99,12 @@ int main(void) {
 					// Ctrl-c bail out on partial command
 					INPUT_Clear();
 					break;
+				
+				case 29:
+					// Ctrl-] reset all eeprom values
+					EEPROM_Reset();
+					INPUT_Clear();
+					break;
 					
 				case 30:
 					// Ctrl-^ jump into the bootloader
@@ -268,28 +274,6 @@ static inline void INPUT_Parse(void) {
 			return;
 		}
 	}
-	// SETVREF - Set the VREF voltage and store in EEPROM to correct voltage readings.
-	if (strncmp_P(DATA_IN, STR_Command_SETVREF, 7) == 0) {
-		uint16_t temp_set_vref = atoi(DATA_IN + 7);
-		if (temp_set_vref >= VREF_MIN && temp_set_vref <= VREF_MAX){
-			float temp_vref = (float)temp_set_vref / 1000.0;
-			EEPROM_Write_REF_V(temp_vref);
-			printPGMStr(STR_VREF);
-			fprintf(&USBSerialStream, "%.3fV", temp_vref);
-			return;
-		}
-	}
-	// SETVDIV - Set the VDIV and store in EEPROM to correct voltage readings.
-	if (strncmp_P(DATA_IN, STR_Command_SETVDIV, 7) == 0) {
-		uint16_t temp_set_vdiv = atoi(DATA_IN + 7);
-		if (temp_set_vdiv >= VDIV_MIN && temp_set_vdiv <= VDIV_MAX){
-			float temp_vdiv = (float)temp_set_vdiv / 10.0;
-			EEPROM_Write_DIV_V(temp_vdiv);
-			printPGMStr(STR_VDIV);
-			fprintf(&USBSerialStream, "%.1f", temp_vdiv);
-			return;
-		}
-	}
 	// SETNAME - Set the name for a given port.
 	if (strncmp_P(DATA_IN, STR_Command_SETNAME, 7) == 0) {
 		char *str = DATA_IN + 7;
@@ -324,6 +308,48 @@ static inline void INPUT_Parse(void) {
 				EEPROM_Write_Port_Limit(portid, temp_set_limit);
 				printPGMStr(STR_Port_Limit);
 				fprintf(&USBSerialStream, "%.1fA", (float)temp_set_limit/10);
+				return;
+			}
+		}
+	}
+	// SETVREF - Set the VREF voltage and store in EEPROM to correct voltage readings.
+	if (strncmp_P(DATA_IN, STR_Command_SETVREF, 7) == 0) {
+		uint16_t temp_set_vref = atoi(DATA_IN + 7);
+		if (temp_set_vref >= VREF_MIN && temp_set_vref <= VREF_MAX){
+			float temp_vref = (float)temp_set_vref / 1000.0;
+			EEPROM_Write_REF_V(temp_vref);
+			printPGMStr(STR_VREF);
+			fprintf(&USBSerialStream, "%.3fV", temp_vref);
+			return;
+		}
+	}
+	// SETVCAL - Set the VCAL and store in EEPROM to correct voltage readings.
+	if (strncmp_P(DATA_IN, STR_Command_SETVCAL, 7) == 0) {
+		uint16_t temp_set_vdiv = atoi(DATA_IN + 7);
+		if (temp_set_vdiv >= VCAL_MIN && temp_set_vdiv <= VCAL_MAX){
+			float temp_vdiv = (float)temp_set_vdiv / 10.0;
+			EEPROM_Write_V_CAL(temp_vdiv);
+			printPGMStr(STR_VCAL);
+			fprintf(&USBSerialStream, "%.1f", temp_vdiv);
+			return;
+		}
+	}
+	// SETICAL - Set the current calibration for a given port and store in EEPROM to 
+	// correct current readings.
+	if (strncmp_P(DATA_IN, STR_Command_SETICAL, 7) == 0) {
+		char *str = DATA_IN + 7;
+		uint8_t portid;
+		
+		while (*str == ' ' || *str == '\t') str++;
+		if (*str >= '1' && *str <= '8') {
+			portid = *str - '1';
+			str++;
+		
+			uint16_t temp_i_cal = atoi(str);
+			if (temp_i_cal >= ICAL_MIN && temp_i_cal <= ICAL_MAX){
+				EEPROM_Write_I_CAL(portid, (float)(temp_i_cal / 10));
+				printPGMStr(STR_ICAL);
+				fprintf(&USBSerialStream, "%.1f", (float)(temp_i_cal / 10));
 				return;
 			}
 		}
@@ -467,15 +493,26 @@ static inline void EEPROM_Write_REF_V(float reference) {
 }
 
 // Read the stored reference voltage from EEPROM
-static inline float EEPROM_Read_DIV_V(void) {
-	float DIV_V = eeprom_read_float((float*)(EEPROM_OFFSET_DIV_V));
+static inline float EEPROM_Read_V_CAL(void) {
+	uint8_t V_CAL = eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_V_CAL));
 	// If the value seems out of range (uninitialized), default it to 11
-	if (DIV_V < 7.0 || DIV_V > 15.0 || isnan(DIV_V)) DIV_V = 11;
-	return DIV_V;
+	if (V_CAL < VCAL_MIN || V_CAL > VCAL_MAX) V_CAL = 110;
+	return (float)(V_CAL / 10.0);
 }
 // Write the reference voltage to EEPROM
-static inline void EEPROM_Write_DIV_V(float div) {
-	eeprom_update_float((float*)(EEPROM_OFFSET_DIV_V), div);
+static inline void EEPROM_Write_V_CAL(float div) {
+	eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_V_CAL), (int)(div * 10));
+}
+
+// Read the stored port current calibration
+static inline float EEPROM_Read_I_CAL(uint8_t port) {
+	uint8_t I_CAL = eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_I_CAL + port));
+	if(I_CAL < ICAL_MIN || I_CAL > ICAL_MAX) I_CAL = 110;
+	return (float)(I_CAL / 10.0);
+}
+// Write the port current calibration to EEPROM
+static inline void EEPROM_Write_I_CAL(uint8_t port, float cal) {
+	eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_I_CAL + port), (int)(cal * 10));
 }
 
 // Read PCYCLE_TIME from EEPROM
@@ -545,10 +582,15 @@ static inline void EEPROM_Dump_Vars(void) {
 	}
 	// Read REF_V
 	printPGMStr(STR_VREF);
-	fprintf(&USBSerialStream, "%.2f %.2f", eeprom_read_float((float*)(EEPROM_OFFSET_REF_V)), EEPROM_Read_REF_V());
-	// Read DIV_V
-	printPGMStr(STR_VDIV);
-	fprintf(&USBSerialStream, "%.1f %.1f", eeprom_read_float((float*)(EEPROM_OFFSET_DIV_V)), EEPROM_Read_DIV_V());
+	fprintf(&USBSerialStream, "%.2f:%.2f", eeprom_read_float((float*)(EEPROM_OFFSET_REF_V)), EEPROM_Read_REF_V());
+	// Read V_CAL
+	printPGMStr(STR_VCAL);
+	fprintf(&USBSerialStream, "%i:%.1f", eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_V_CAL)), EEPROM_Read_V_CAL());
+	// Read I_CAL
+	printPGMStr(STR_ICAL);
+	for (uint8_t i = 0; i < PORT_CNT; i++) {
+		fprintf(&USBSerialStream, "%i:%.1f ", eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_I_CAL + i)), EEPROM_Read_I_CAL(i));
+	}
 	// Read Port Cycle Time
 	printPGMStr(STR_PCYCLE_Time);
 	fprintf(&USBSerialStream, "%iS", eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_CYCLE_TIME)));
@@ -567,20 +609,27 @@ static inline void EEPROM_Dump_Vars(void) {
 	}
 }
 
+// Reset all EEPROM values to 255
+static inline void EEPROM_Reset(void) {
+	for (uint16_t i = 0; i < 256; i++) {
+		eeprom_update_byte((uint8_t*)(i), 255);
+	}
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~ ADC Functions
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // Read current flow on a given port
 static inline float ADC_Read_Current(uint8_t port) {
-	float voltage = (ADC_Read_Raw(port, 0) * EEPROM_Read_REF_V() / 1024) / 11;
+	float voltage = (ADC_Read_Raw(port, 0) * EEPROM_Read_REF_V() / 1024) / EEPROM_Read_I_CAL(port);
 	if (voltage < 0.001) voltage = 0.0; // Ignore the lowest voltages so we don't falsely say there's current where there isn't.
 	return (voltage / 0.05);
 }
 
 // Read input voltage
 static inline float ADC_Read_Voltage(void) {
-	return ((ADC_Read_Raw(6, 1)* EEPROM_Read_REF_V() / 1024) * EEPROM_Read_DIV_V());
+	return ((ADC_Read_Raw(6, 1)* EEPROM_Read_REF_V() / 1024) * EEPROM_Read_V_CAL());
 }
 
 // Read temperature

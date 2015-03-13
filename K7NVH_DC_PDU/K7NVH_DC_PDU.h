@@ -77,19 +77,21 @@
 #define PCYCLE_MAX_TIME 30 // Seconds
 #define VREF_MAX 4700 // 4.7V * 1000
 #define VREF_MIN 4300 // 4.3V * 1000
-#define VDIV_MAX 150 // 15.0
-#define VDIV_MIN 70 // 7.0
+#define VCAL_MAX 150 // 15.0
+#define VCAL_MIN 70 // 7.0
 #define LIMIT_MAX 100 // Stored as amps*10 so 50==5.0A
+#define ICAL_MAX 160 // 160/10 = 16.0
+#define ICAL_MIN 60 // 60/10 = 6.0
 
 // EEPROM Offsets
 #define EEPROM_OFFSET_PORT_DEFAULTS 0 // 8 bytes at offset 0
 #define EEPROM_OFFSET_REF_V 8 // 4 bytes at offset 8
-
+#define EEPROM_OFFSET_V_CAL 12 // 1 bytes at offset 12
 #define EEPROM_OFFSET_CYCLE_TIME 13 // 1 byte at offset 13
-
+// 14-15
 #define EEPROM_OFFSET_LIMIT 16 // 8 Bytes at offset 16
-#define EEPROM_OFFSET_DIV_V 24 // 4 bytes at offset 24
-
+#define EEPROM_OFFSET_I_CAL 24 // 8 Bytes at offset 24
+// 32-63
 #define EEPROM_OFFSET_P0NAME 64 // 16 bytes at offset 64
 #define EEPROM_OFFSET_P1NAME 80 // 16 bytes at offset 80
 #define EEPROM_OFFSET_P2NAME 96 // 16 bytes at offset 96
@@ -143,7 +145,8 @@ const char STR_Port_Default[] PROGMEM = "\r\nPORT DEFAULT ";
 const char STR_PCYCLE_Time[] PROGMEM = "\r\nPCYCLE TIME: ";
 const char STR_Port_Limit[] PROGMEM = "\r\nPORT LIMIT: ";
 const char STR_VREF[] PROGMEM = "\r\nVREF: ";
-const char STR_VDIV[] PROGMEM = "\r\nVDIV: ";
+const char STR_VCAL[] PROGMEM = "\r\nVCAL: ";
+const char STR_ICAL[] PROGMEM = "\r\nICAL: ";
 
 // Command strings
 const char STR_Command_HELP[] PROGMEM = "HELP";
@@ -155,7 +158,8 @@ const char STR_Command_PCYCLE[] PROGMEM = "PCYCLE";
 const char STR_Command_SETCYCLE[] PROGMEM = "SETCYCLE";
 const char STR_Command_SETDEF[] PROGMEM = "SETDEF";
 const char STR_Command_SETVREF[] PROGMEM = "SETVREF";
-const char STR_Command_SETVDIV[] PROGMEM = "SETVDIV";
+const char STR_Command_SETVCAL[] PROGMEM = "SETVCAL";
+const char STR_Command_SETICAL[] PROGMEM = "SETICAL";
 const char STR_Command_SETNAME[] PROGMEM = "SETNAME";
 const char STR_Command_SETLIMIT[] PROGMEM = "SETLIMIT";
 
@@ -232,8 +236,10 @@ static inline uint8_t EEPROM_Read_Port_Default(uint8_t port);
 static inline void EEPROM_Write_Port_Default(uint8_t port, uint8_t portdef);
 static inline float EEPROM_Read_REF_V(void);
 static inline void EEPROM_Write_REF_V(float reference);
-static inline float EEPROM_Read_DIV_V(void);
-static inline void EEPROM_Write_DIV_V(float div);
+static inline float EEPROM_Read_V_CAL(void);
+static inline void EEPROM_Write_V_CAL(float div);
+static inline float EEPROM_Read_I_CAL(uint8_t port);
+static inline void EEPROM_Write_I_CAL(uint8_t port, float cal);
 static inline uint8_t EEPROM_Read_PCycle_Time(void);
 static inline void EEPROM_Write_PCycle_Time(uint8_t time);
 static inline void EEPROM_Read_Port_Name(uint8_t port, char *str);
@@ -241,6 +247,7 @@ static inline void EEPROM_Write_Port_Name(uint8_t port, char *str);
 static inline uint8_t EEPROM_Read_Port_Limit(uint8_t port);
 static inline void EEPROM_Write_Port_Limit(uint8_t port, uint8_t limit);
 static inline void EEPROM_Dump_Vars(void);
+static inline void EEPROM_Reset(void);
 
 static inline float ADC_Read_Current(uint8_t port);
 static inline float ADC_Read_Voltage(void);
