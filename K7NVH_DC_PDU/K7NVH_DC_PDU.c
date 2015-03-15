@@ -1,7 +1,7 @@
 /* (c) 2015 Nigel Vander Houwen */
 //
 // TODO
-// Implement programmatical status output
+// Implement user settable device name
 // High water mark stored in EEPROM (Lifetime & User resettable)
 // Port locking?
 // Case insensitive
@@ -37,7 +37,8 @@ int main(void) {
 	}
 
 	// Print startup message
-	printPGMStr(PSTR(SOFTWAREVERS));
+	printPGMStr(PSTR(SOFTWARE_STR));
+	fprintf(&USBSerialStream, " V%s", SOFTWARE_VERS);
 	run_lufa();
 
 	// Start up SPI
@@ -202,6 +203,11 @@ static inline void INPUT_Parse(void) {
 	// STATUS - Print a port status summary for all ports
 	if (strncmp_P(DATA_IN, STR_Command_STATUS, 6) == 0) {
 		PRINT_Status();
+		return;
+	}
+	// PSTATUS - Print a status summary in a parser friendly output
+	if (strncmp_P(DATA_IN, STR_Command_PSTATUS, 7) == 0) {
+		PRINT_Status_Prog();
 		return;
 	}
 	// EEPROMDUMP - Print a report of the variables stored in EEPROM
@@ -400,6 +406,38 @@ static inline void PRINT_Status(void) {
 	printPGMStr(PSTR("\r\nAUX "));
 	for (uint8_t j = 0; j < 6; j++) {
 		fprintf(&USBSerialStream, "%i:%.2fV ", j+1, ADC_Read_Raw_Voltage(j, 1));
+	}
+}
+
+// Print programmatical status output
+static inline void PRINT_Status_Prog(void){
+	float voltage = ADC_Read_Input_Voltage();
+	
+	// Device Description,Software version,Unit Name
+	printPGMStr(PSTR(SOFTWARE_STR));
+	fprintf(&USBSerialStream, ",%s,", SOFTWARE_VERS);
+	
+	// Input Voltage,Temperature
+	fprintf(&USBSerialStream, "\r\n%.2f,%.0f", voltage, ADC_Read_Temperature());
+	
+	// AIN1,AIN2,AIN3,AIN4,AIN5,AIN6
+	fprintf(&USBSerialStream, "\r\n%.2f,%.2f,%.2f,%.2f,%.2f,%.2f", ADC_Read_Raw_Voltage(0, 1), \
+		ADC_Read_Raw_Voltage(1, 1), ADC_Read_Raw_Voltage(2, 1), ADC_Read_Raw_Voltage(3, 1), \
+		ADC_Read_Raw_Voltage(4, 1), ADC_Read_Raw_Voltage(5, 1));
+	
+	// Port Number,Port Name,Enabled?,Current,Power,Overload
+	for (uint8_t i = 0; i < PORT_CNT; i++) {
+		char temp_name[16];
+		EEPROM_Read_Port_Name(i, temp_name);
+		
+		uint8_t port_state = (PORT_STATE[i] & 0b00000001);
+		uint8_t port_overload = (PORT_STATE[i] &0b00000010) >> 1;
+		
+		float current = ADC_Read_Port_Current(i);
+		float power = current * voltage;
+		
+		fprintf(&USBSerialStream, "\r\n%i,%s,%i,%.2f,%.1f,%i", i+1, temp_name, port_state, \
+			current, power, port_overload);
 	}
 }
 

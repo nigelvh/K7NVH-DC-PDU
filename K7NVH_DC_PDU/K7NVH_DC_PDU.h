@@ -30,7 +30,8 @@
 // storage of color codes/modified strings.
 #define ENABLECOLORS
 
-#define SOFTWAREVERS "\r\nK7NVH DC PDU V1.1\r\n"
+#define SOFTWARE_STR "\r\nK7NVH DC PDU"
+#define SOFTWARE_VERS "1.1"
 #define PORT_CNT    8
 #define INPUT_CNT	8
 #define DATA_BUFF_LEN    32
@@ -151,6 +152,7 @@ const char STR_ICAL[] PROGMEM = "\r\nICAL: ";
 // Command strings
 const char STR_Command_HELP[] PROGMEM = "HELP";
 const char STR_Command_STATUS[] PROGMEM = "STATUS";
+const char STR_Command_PSTATUS[] PROGMEM = "PSTATUS";
 const char STR_Command_EEPROMDUMP[] PROGMEM = "EEPROMDUMP";
 const char STR_Command_PON[] PROGMEM = "PON";
 const char STR_Command_POFF[] PROGMEM = "POFF";
@@ -257,6 +259,7 @@ static inline uint16_t ADC_Read_Raw(uint8_t port, uint8_t adc);
 
 static inline void printPGMStr(PGM_P s);
 static inline void PRINT_Status(void);
+static inline void PRINT_Status_Prog(void);
 static inline void PRINT_Help(void);
 
 static inline void INPUT_Clear(void);
