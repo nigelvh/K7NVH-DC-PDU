@@ -30,6 +30,32 @@ PORT 8 "": ENABLED Current: 0.00A Power: 0.0W
 AUX 1:0.01V 2:0.04V 3:0.01V 4:0.02V 5:0.03V 6:0.00V
 ```
 
+### PSTATUS
+The 'PSTATUS' command is designed to give an overview of the running state of the PDU in a easily parseable format for use with programs querying the PDU for information. The output is in a simple CSV format, defined as follows.
+
+```plain
+K7NVH DC PDU,Version Number,Device Name
+Input Voltage,Board Temperature
+AIN1,AIN2,AIN3,AIN4,AIN5,AIN6
+Port Number,Port Name,Binary Enabled/Disabled Flag,Port Current,Port Power,Binary Overload Flag
+(The above line is repeated for each port)
+```
+An example output might look like the following.
+```plain
+> PSTATUS
+K7NVH DC PDU,1.1,
+2.15,23
+0.02,0.04,0.03,0.01,0.01,0.03
+0,,1,0.00,0.0,0
+1,,1,0.00,0.0,0
+2,,1,0.00,0.0,0
+3,,1,0.00,0.0,0
+4,,1,0.00,0.0,0
+5,,1,0.00,0.0,0
+6,,1,0.00,0.0,0
+7,Port 8,1,0.03,0.1,0
+```
+
 ### PON
 The 'PON' command is used to enable one or more ports on the PDU.
 
