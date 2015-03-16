@@ -1,7 +1,6 @@
 /* (c) 2015 Nigel Vander Houwen */
 //
 // TODO
-// Implement user settable device name
 // High water mark stored in EEPROM (Lifetime & User resettable)
 // Port locking?
 // Case insensitive
@@ -173,7 +172,16 @@ int main(void) {
 static inline void INPUT_Clear(void) {
 	memset(&DATA_IN[0], 0, sizeof(DATA_IN));
 	DATA_IN_POS = 0;
-	printPGMStr(STR_Prompt);
+	
+	// Read PDU name
+	char temp_name[16];
+	EEPROM_Read_Port_Name(-1, temp_name);
+	
+#ifdef ENABLECOLORS
+	fprintf(&USBSerialStream, "\r\n\r\n\x1b[32m%s \x1b[36m>\x1b[0m ", temp_name);
+#else
+	fprintf(&USBSerialStream, "\r\n\r\n%s > ", temp_name);
+#endif
 }
 
 // Parse command arguments and return pd_set bitmap with relevant port
@@ -278,19 +286,29 @@ static inline void INPUT_Parse(void) {
 	// SETNAME - Set the name for a given port.
 	if (strncmp_P(DATA_IN, STR_Command_SETNAME, 7) == 0) {
 		char *str = DATA_IN + 7;
-		uint8_t portid;
+		int8_t portid;
 		char temp_name[16];
 
 		while (*str == ' ' || *str == '\t') str++;
 		if (*str >= '1' && *str <= '8') {
 			portid = *str - '1';
+			
 			str++;
 			while (*str == ' ' || *str == '\t') str++;
 
 			EEPROM_Write_Port_Name(portid, str);
+			
 			printPGMStr(STR_NR_Port);
 			EEPROM_Read_Port_Name(portid, temp_name);
 			fprintf(&USBSerialStream, "%i NAME: %s", portid + 1, temp_name);
+			return;
+		} else if (*str == 'P') {
+			portid = -1;
+			
+			str++;
+			while (*str == ' ' || *str == '\t') str++;
+
+			EEPROM_Write_Port_Name(portid, str);
 			return;
 		}
 	}
@@ -411,11 +429,13 @@ static inline void PRINT_Status(void) {
 
 // Print programmatical status output
 static inline void PRINT_Status_Prog(void){
+	char temp_name[16];
 	float voltage = ADC_Read_Input_Voltage();
 	
 	// Device Description,Software version,Unit Name
+	EEPROM_Read_Port_Name(-1, temp_name); //PDU Name
 	printPGMStr(PSTR(SOFTWARE_STR));
-	fprintf(&USBSerialStream, ",%s,", SOFTWARE_VERS);
+	fprintf(&USBSerialStream, ",%s,%s", SOFTWARE_VERS, temp_name);
 	
 	// Input Voltage,Temperature
 	fprintf(&USBSerialStream, "\r\n%.2f,%.0f", voltage, ADC_Read_Temperature());
@@ -427,7 +447,6 @@ static inline void PRINT_Status_Prog(void){
 	
 	// Port Number,Port Name,Enabled?,Current,Power,Overload
 	for (uint8_t i = 0; i < PORT_CNT; i++) {
-		char temp_name[16];
 		EEPROM_Read_Port_Name(i, temp_name);
 		
 		uint8_t port_state = (PORT_STATE[i] & 0b00000001);
@@ -578,7 +597,7 @@ static inline void EEPROM_Write_PCycle_Time(uint8_t time) {
 }
 
 // Read the stored port name
-static inline void EEPROM_Read_Port_Name(uint8_t port, char *str) {
+static inline void EEPROM_Read_Port_Name(int8_t port, char *str) {
 	char working = 0;
 	uint8_t count = 0;
 	
@@ -599,7 +618,7 @@ static inline void EEPROM_Read_Port_Name(uint8_t port, char *str) {
 	}
 }
 // Write the port name to EEPROM
-static inline void EEPROM_Write_Port_Name(uint8_t port, char *str) {
+static inline void EEPROM_Write_Port_Name(int8_t port, char *str) {
 	// While we haven't reached the end of the string, or reached the end of the buffer
 	// Write the name bytes to EEPROM
 	for (uint8_t i = 0; i < 15; i++) {

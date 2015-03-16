@@ -93,6 +93,7 @@
 #define EEPROM_OFFSET_LIMIT 16 // 8 Bytes at offset 16
 #define EEPROM_OFFSET_I_CAL 24 // 8 Bytes at offset 24
 // 32-63
+#define EEPROM_OFFSET_PDUNAME 48 // 16 bytes at offset 48
 #define EEPROM_OFFSET_P0NAME 64 // 16 bytes at offset 64
 #define EEPROM_OFFSET_P1NAME 80 // 16 bytes at offset 80
 #define EEPROM_OFFSET_P2NAME 96 // 16 bytes at offset 96
@@ -131,13 +132,11 @@ const char STR_Help_Info[] PROGMEM = "\r\nVisit https://github.com/nigelvh/K7NVH
 	const char STR_Enabled[] PROGMEM = "\x1b[32mENABLED\x1b[0m";
 	const char STR_Disabled[] PROGMEM = "\x1b[31mDISABLED\x1b[0m";
 	const char STR_Overload[] PROGMEM = "\x1b[31m!OVERLOAD!\x1b[0m";
-	const char STR_Prompt[] PROGMEM = "\r\n\r\n\x1b[36m>\x1b[0m ";
 #else
 	const char STR_Unrecognized[] PROGMEM = "\r\nINVALID COMMAND";
 	const char STR_Enabled[] PROGMEM = "ENABLED";
 	const char STR_Disabled[] PROGMEM = "DISABLED";
 	const char STR_Overload[] PROGMEM = "!OVERLOAD!";
-	const char STR_Prompt[] PROGMEM = "\r\n\r\n> ";
 #endif	
 
 const char STR_Backspace[] PROGMEM = "\x1b[D \x1b[D";
@@ -244,8 +243,8 @@ static inline float EEPROM_Read_I_CAL(uint8_t port);
 static inline void EEPROM_Write_I_CAL(uint8_t port, float cal);
 static inline uint8_t EEPROM_Read_PCycle_Time(void);
 static inline void EEPROM_Write_PCycle_Time(uint8_t time);
-static inline void EEPROM_Read_Port_Name(uint8_t port, char *str);
-static inline void EEPROM_Write_Port_Name(uint8_t port, char *str);
+static inline void EEPROM_Read_Port_Name(int8_t port, char *str);
+static inline void EEPROM_Write_Port_Name(int8_t port, char *str);
 static inline uint8_t EEPROM_Read_Port_Limit(uint8_t port);
 static inline void EEPROM_Write_Port_Limit(uint8_t port, uint8_t limit);
 static inline void EEPROM_Dump_Vars(void);

@@ -99,6 +99,10 @@ The user defined name will be displayed alongside the port number in the output 
 
 The PDU supports setting only one port name at a time, but the syntax is flexible like with other multi-port commands. The following are examples of valid 'SETNAME' syntax, setting Port 1's name to "Testing". `SETNAME1Testing` `SETNAME1 Testing` `SETNAME 1Testing` `SETNAME 1 Testing`
 
+The 'SETNAME' command can also be used to give the PDU device an overall name by using 'P' in place of the port number. The device name will be displayed as part of the input prompt as a visual aid to ensure users are interacting with the intended device. The following is an example of valid 'SETNAME' syntax to set the device name. `SETNAME P PDU-Test`
+
+The same string length limits that apply to individual port names also apply to the device name.
+
 ### SETLIMIT
 The 'SETLIMIT' command is used to store a user defined overload current limit for each port on the PDU. By default the current limit is set to 10 amps. While the PDU is not rated for this current flow, 10A was chosen to effectively "disable" current limits from disabling PDU ports.
 
