@@ -3,7 +3,6 @@
 // TODO
 // High water mark stored in EEPROM (Lifetime & User resettable)
 // Port locking?
-// Case insensitive
 // Watchdog - Problem exists where reset dumps into DFU, and waits there.
 
 #include "K7NVH_DC_PDU.h"
