@@ -204,39 +204,39 @@ static inline void INPUT_Parse(void) {
 	pd_set pd; // Port descriptor bitmap
 
 	// HELP - Print a basic help menu
-	if (strncmp_P(DATA_IN, STR_Command_HELP, 4) == 0) {
+	if (strncasecmp_P(DATA_IN, STR_Command_HELP, 4) == 0) {
 		PRINT_Help();
 		return;
 	}
 	// STATUS - Print a port status summary for all ports
-	if (strncmp_P(DATA_IN, STR_Command_STATUS, 6) == 0) {
+	if (strncasecmp_P(DATA_IN, STR_Command_STATUS, 6) == 0) {
 		PRINT_Status();
 		return;
 	}
 	// PSTATUS - Print a status summary in a parser friendly output
-	if (strncmp_P(DATA_IN, STR_Command_PSTATUS, 7) == 0) {
+	if (strncasecmp_P(DATA_IN, STR_Command_PSTATUS, 7) == 0) {
 		PRINT_Status_Prog();
 		return;
 	}
 	// EEPROMDUMP - Print a report of the variables stored in EEPROM
-	if (strncmp_P(DATA_IN, STR_Command_EEPROMDUMP, 10) == 0) {
+	if (strncasecmp_P(DATA_IN, STR_Command_EEPROMDUMP, 10) == 0) {
 		EEPROM_Dump_Vars();
 		return;
 	}
 	// PON - Turn on a port or list of ports
-	if (strncmp_P(DATA_IN, STR_Command_PON, 3) == 0) {
+	if (strncasecmp_P(DATA_IN, STR_Command_PON, 3) == 0) {
 		INPUT_Parse_args(&pd, DATA_IN + 3);
 		PORT_Set_Ctl(&pd, 1);
 		return;
 	}
 	// POFF - Turn off a port or a list of ports
-	if (strncmp_P(DATA_IN, STR_Command_POFF, 4) == 0) {
+	if (strncasecmp_P(DATA_IN, STR_Command_POFF, 4) == 0) {
 		INPUT_Parse_args(&pd, DATA_IN + 4);
 		PORT_Set_Ctl(&pd, 0);
 		return;
 	}
 	// PCYCLE - Power cycle a port or list of ports. Time is defined by EEPROM_Read_PCycle_Time().
-	if (strncmp_P(DATA_IN, STR_Command_PCYCLE, 6) == 0) {
+	if (strncasecmp_P(DATA_IN, STR_Command_PCYCLE, 6) == 0) {
 		INPUT_Parse_args(&pd, DATA_IN + 6);
 		
 		PORT_Set_Ctl(&pd, 0);
@@ -254,7 +254,7 @@ static inline void INPUT_Parse(void) {
 		return;
 	}
 	// SETCYCLE - Set PCYCLE_TIME and store in EEPROM
-	if (strncmp_P(DATA_IN, STR_Command_SETCYCLE, 8) == 0) {
+	if (strncasecmp_P(DATA_IN, STR_Command_SETCYCLE, 8) == 0) {
 		uint16_t temp_set_time = atoi(DATA_IN + 8);
 		if (temp_set_time <= PCYCLE_MAX_TIME) {
 			printPGMStr(STR_PCYCLE_Time);
@@ -264,13 +264,13 @@ static inline void INPUT_Parse(void) {
 		}
 	}
 	// SETDEV - Set the port default state
-	if (strncmp_P(DATA_IN, STR_Command_SETDEF, 6) == 0) {
+	if (strncasecmp_P(DATA_IN, STR_Command_SETDEF, 6) == 0) {
 		char *str = DATA_IN + 6;
 		uint8_t state = 255;
-		if (strncmp_P(str, PSTR("ON"), 2) == 0) {
+		if (strncasecmp_P(str, PSTR("ON"), 2) == 0) {
 			state = 1;
 		}
-		if (strncmp_P(str, PSTR("OFF"), 3) == 0) {
+		if (strncasecmp_P(str, PSTR("OFF"), 3) == 0) {
 			state = 0;
 		}
 		if (state <= 1) {
@@ -284,7 +284,7 @@ static inline void INPUT_Parse(void) {
 		}
 	}
 	// SETNAME - Set the name for a given port.
-	if (strncmp_P(DATA_IN, STR_Command_SETNAME, 7) == 0) {
+	if (strncasecmp_P(DATA_IN, STR_Command_SETNAME, 7) == 0) {
 		char *str = DATA_IN + 7;
 		int8_t portid;
 		char temp_name[16];
@@ -313,7 +313,7 @@ static inline void INPUT_Parse(void) {
 		}
 	}
 	// SETLIMIT - Set the current limit for a given port.
-	if (strncmp_P(DATA_IN, STR_Command_SETLIMIT, 8) == 0) {
+	if (strncasecmp_P(DATA_IN, STR_Command_SETLIMIT, 8) == 0) {
 		char *str = DATA_IN + 8;
 		uint8_t portid;
 		
@@ -332,7 +332,7 @@ static inline void INPUT_Parse(void) {
 		}
 	}
 	// SETVREF - Set the VREF voltage and store in EEPROM to correct voltage readings.
-	if (strncmp_P(DATA_IN, STR_Command_SETVREF, 7) == 0) {
+	if (strncasecmp_P(DATA_IN, STR_Command_SETVREF, 7) == 0) {
 		uint16_t temp_set_vref = atoi(DATA_IN + 7);
 		if (temp_set_vref >= VREF_MIN && temp_set_vref <= VREF_MAX){
 			float temp_vref = (float)temp_set_vref / 1000.0;
@@ -343,7 +343,7 @@ static inline void INPUT_Parse(void) {
 		}
 	}
 	// SETVCAL - Set the VCAL and store in EEPROM to correct voltage readings.
-	if (strncmp_P(DATA_IN, STR_Command_SETVCAL, 7) == 0) {
+	if (strncasecmp_P(DATA_IN, STR_Command_SETVCAL, 7) == 0) {
 		uint16_t temp_set_vdiv = atoi(DATA_IN + 7);
 		if (temp_set_vdiv >= VCAL_MIN && temp_set_vdiv <= VCAL_MAX){
 			float temp_vdiv = (float)temp_set_vdiv / 10.0;
@@ -355,7 +355,7 @@ static inline void INPUT_Parse(void) {
 	}
 	// SETICAL - Set the current calibration for a given port and store in EEPROM to 
 	// correct current readings.
-	if (strncmp_P(DATA_IN, STR_Command_SETICAL, 7) == 0) {
+	if (strncasecmp_P(DATA_IN, STR_Command_SETICAL, 7) == 0) {
 		char *str = DATA_IN + 7;
 		uint8_t portid;
 		
