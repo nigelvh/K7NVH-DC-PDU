@@ -178,9 +178,9 @@ static inline void INPUT_Clear(void) {
 	EEPROM_Read_Port_Name(-1, temp_name);
 	
 #ifdef ENABLECOLORS
-	fprintf(&USBSerialStream, "\r\n\r\n\x1b[32m%s \x1b[36m>\x1b[0m ", temp_name);
+	fprintf(&USBSerialStream, "\r\n\r\n#\x1b[32m%s \x1b[36m>\x1b[0m ", temp_name);
 #else
-	fprintf(&USBSerialStream, "\r\n\r\n%s > ", temp_name);
+	fprintf(&USBSerialStream, "\r\n\r\n#%s > ", temp_name);
 #endif
 }
 

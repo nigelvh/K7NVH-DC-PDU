@@ -172,14 +172,14 @@ int main(int argc, char *argv[]) {
 			}
 			
 			// Check if our byte is a '>' or EOF. If so, break, else print out the char.
-			//if(buf[0] == '>' || buf[0] == EOF){
-			//	exit_cleanup(0);
-			//}else{
+			if(buf[0] == '#' || buf[0] == EOF){
+				exit_cleanup(0);
+			}else{
 				fprintf(stdout, "%c", buf[0]);
-			//}
+			}
 		}else{
-			// Sleep for 100ms (non-blocking wait, lowers CPU time dramatically)
-			usleep(100*1000);
+			// Sleep for 20ms (non-blocking wait, lowers CPU time dramatically)
+			usleep(20*1000);
 		}
 	}
 	
