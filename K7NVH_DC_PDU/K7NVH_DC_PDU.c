@@ -4,17 +4,30 @@
 // High water mark stored in EEPROM (Lifetime & User resettable)
 // Port locking?
 // Watchdog - Problem exists where reset dumps into DFU, and waits there.
+// Up/down arrow keys?
+// Voltage based port control. Enable/disable, Voff, Von, delay (5s?), manual control disables voltage control
 
 #include "K7NVH_DC_PDU.h"
+
+ISR(WDT_vect){
+	timer++;
+}
 
 // Main program entry point.
 int main(void) {
 	// Initialize some variables
 	int16_t BYTE_IN = -1;
-
-	// Disable watchdog if enabled by bootloader/fuses
+	
+	// Set the watchdog timer to interrupt for timekeeping
 	MCUSR &= ~(1 << WDRF);
-	wdt_disable();
+	WDTCSR |= 0b00011000; // Set WDCE and WDE to enable WDT changes
+	WDTCSR = 0b01000011; // Enable watchdog interrupt and Interrupt at 0.25s
+
+	// Save some power by disabling peripherals.
+	PRR0 &= 0b11010111;
+	PRR1 &= 0b11111110;
+	ACSR &= 0b10111111;
+	ACSR |= 0b10001000;
 
 	// Divide 16MHz crystal down to 1MHz for CPU clock.
 	clock_prescale_set(clock_div_16);
@@ -106,6 +119,7 @@ int main(void) {
 					
 				case 30:
 					// Ctrl-^ jump into the bootloader
+					TIMSK0 = 0b00000000; // Interrupt will mess with the bootloader
 					bootloader();
 					break; // We should never get here...
 
