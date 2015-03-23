@@ -4,17 +4,16 @@ board_z = 14;
 board_thickness = 1.7;
 
 board_spacing = 2;
-wall_thickness = 4;
 
 hole_diameter = 3.5;
-screw_hole_diameter = 2.5;
+screw_hole_diameter = 3;
 screw_head_diameter = 8;
 post_diameter = 6;
 post_base_height = 3;
 pin_height = 1.7;
 pin_diameter = 2;
 
-wall_thickness = 4;
+wall_thickness = 2;
 
 tab_width = 15;
 tab_length = 15;
@@ -50,7 +49,7 @@ air_hole_gap = 10;
 powerpole_hole_width = 17;
 powerpole_hole_height = 9;
 powerpole_input_x = 0;
-powerpole_input_y = 24.8;
+powerpole_input_y = 25.25;
 powerpole_p1_x = 48.1;
 powerpole_p1_y = 22.9;
 powerpole_p2_x = 48.1;
@@ -203,7 +202,7 @@ difference(){
 		cube([(board_x + board_spacing + wall_thickness*2), wall_thickness, board_z + wall_thickness], center=true);
 	}
 	translate([0,0,wall_thickness/2 + air_hole_height*2/2]){
-		#cube([air_hole_width*4, (board_y + board_spacing + wall_thickness*2), air_hole_height*2], center=true);
+		#cube([air_hole_width*5, (board_y + board_spacing + wall_thickness*2), air_hole_height*2], center=true);
 	}
 	translate([(air_hole_width+air_hole_gap)*2,0,wall_thickness/2 + air_hole_height/2]){
 		#cube([air_hole_width, (board_y + board_spacing + wall_thickness*2), air_hole_height], center=true);
