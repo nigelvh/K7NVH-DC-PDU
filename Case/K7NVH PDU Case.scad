@@ -1,7 +1,7 @@
-board_x = 114.3;
+board_x = 115;
 board_y = 66.1;
 board_z = 14;
-board_thickness = 1.7;
+board_thickness = 1.8;
 
 board_spacing = 2;
 
@@ -19,27 +19,27 @@ tab_width = 15;
 tab_length = 15;
 tab_hole_diameter = 4.5;
 
-peg1_x = -54.65;
+peg1_x = -54.85;
 peg1_y = 30.48;
-peg2_x = -54.65;
+peg2_x = -54.85;
 peg2_y = -30.48;
 
-peg3_x = 54.65;
+peg3_x = 54.85;
 peg3_y = 30.48;
-peg4_x = 54.65;
+peg4_x = 54.85;
 peg4_y = -30.48;
 
-peg5_x = -54.65;
+peg5_x = -54.85;
 peg5_y = 15.3;
-peg6_x = 54.65;
+peg6_x = 54.85;
 peg6_y = 15.3;
-peg7_x = -54.65;
+peg7_x = -54.85;
 peg7_y = -15.3;
-peg8_x = 54.65;
+peg8_x = 54.85;
 peg8_y = -15.3;
-peg9_x = -54.65;
+peg9_x = -54.85;
 peg9_y = 0;
-peg10_x = 54.65;
+peg10_x = 54.85;
 peg10_y = 0;
 
 air_hole_width = 10;
@@ -50,21 +50,21 @@ powerpole_hole_width = 17;
 powerpole_hole_height = 9;
 powerpole_input_x = 0;
 powerpole_input_y = 25.25;
-powerpole_p1_x = 48.1;
+powerpole_p1_x = 48.5;
 powerpole_p1_y = 22.9;
-powerpole_p2_x = 48.1;
+powerpole_p2_x = 48.5;
 powerpole_p2_y = 7.6;
-powerpole_p3_x = 48.1;
+powerpole_p3_x = 48.5;
 powerpole_p3_y = -7.6;
-powerpole_p4_x = 48.1;
+powerpole_p4_x = 48.5;
 powerpole_p4_y = -22.9;
-powerpole_p5_x = -48.1;
+powerpole_p5_x = -48.5;
 powerpole_p5_y = 22.9;
-powerpole_p6_x = -48.1;
+powerpole_p6_x = -48.5;
 powerpole_p6_y = 7.6;
-powerpole_p7_x = -48.1;
+powerpole_p7_x = -48.5;
 powerpole_p7_y = -7.6;
-powerpole_p8_x = -48.1;
+powerpole_p8_x = -48.5;
 powerpole_p8_y = -22.9;
 
 // Bottom Plate
