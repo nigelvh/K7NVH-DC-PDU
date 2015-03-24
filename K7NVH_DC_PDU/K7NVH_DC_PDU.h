@@ -84,6 +84,10 @@
 #define LIMIT_MAX 100 // Stored as amps*10 so 50==5.0A
 #define ICAL_MAX 160 // 160/10 = 16.0
 #define ICAL_MIN 60 // 60/10 = 6.0
+#define VMAX 40
+
+// Timing
+#define VCTL_DELAY 5 // Seconds
 
 // EEPROM Offsets
 #define EEPROM_OFFSET_PORT_DEFAULTS 0 // 8 bytes at offset 0
@@ -93,7 +97,7 @@
 // 14-15
 #define EEPROM_OFFSET_LIMIT 16 // 8 Bytes at offset 16
 #define EEPROM_OFFSET_I_CAL 24 // 8 Bytes at offset 24
-// 32-63
+// 32-47
 #define EEPROM_OFFSET_PDUNAME 48 // 16 bytes at offset 48
 #define EEPROM_OFFSET_P0NAME 64 // 16 bytes at offset 64
 #define EEPROM_OFFSET_P1NAME 80 // 16 bytes at offset 80
@@ -103,6 +107,8 @@
 #define EEPROM_OFFSET_P5NAME 144 // 16 bytes at offset 144
 #define EEPROM_OFFSET_P6NAME 160 // 16 bytes at offset 160
 #define EEPROM_OFFSET_P7NAME 176 // 16 bytes at offset 176
+#define EEPROM_OFFSET_V_CUTOFF 192 // 16 Bytes at offset 192
+#define EEPROM_OFFSET_V_CUTON 208 // 16 Bytes at offset 208
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~ Globals
@@ -114,8 +120,11 @@ unsigned long timer = 0;
 typedef uint8_t pd_set; // Port Descriptor Set - bitmap of ports
 
 // Port State Set - bitmap of port state
-// (NUL,NUL,NUL,NUL,NUL,NUL,Overload,Enabled/Disabled)
-typedef uint8_t ps_set; 
+// (NUL,NUL,NUL,NUL,NUL,VCTL Enabled?,Overload,Enabled?)
+typedef uint8_t ps_set;
+// Port Boot State Set - bitmap of port boot state
+// (NUL,NUL,NUL,NUL,NUL,NUL,VCTL Enabled?,Enabled?)
+typedef uint8_t pbs_set;
 
 // Standard file stream for the CDC interface when set up, so that the
 // virtual CDC COM port can be used like any regular character stream
@@ -135,12 +144,14 @@ const char STR_Help_Info[] PROGMEM = "\r\nVisit https://github.com/nigelvh/K7NVH
 	const char STR_Unrecognized[] PROGMEM = "\r\n\x1b[31mINVALID COMMAND\x1b[0m";
 	const char STR_Enabled[] PROGMEM = "\x1b[32mENABLED\x1b[0m";
 	const char STR_Disabled[] PROGMEM = "\x1b[31mDISABLED\x1b[0m";
-	const char STR_Overload[] PROGMEM = "\x1b[31m!OVERLOAD!\x1b[0m";
+	const char STR_Overload[] PROGMEM = " \x1b[31m!OVERLOAD!\x1b[0m";
+	const char STR_VCTL[] PROGMEM = " \x1b[36mVOLTAGE CTL\x1b[0m";
 #else
 	const char STR_Unrecognized[] PROGMEM = "\r\nINVALID COMMAND";
 	const char STR_Enabled[] PROGMEM = "ENABLED";
 	const char STR_Disabled[] PROGMEM = "DISABLED";
-	const char STR_Overload[] PROGMEM = "!OVERLOAD!";
+	const char STR_Overload[] PROGMEM = " !OVERLOAD!";
+	const char STR_VCTL[] PROGMEM = " VOLTAGE CTL";
 #endif	
 
 const char STR_Backspace[] PROGMEM = "\x1b[D \x1b[D";
@@ -148,6 +159,8 @@ const char STR_NR_Port[] PROGMEM = "\r\nPORT ";
 const char STR_Port_Default[] PROGMEM = "\r\nPORT DEFAULT ";
 const char STR_PCYCLE_Time[] PROGMEM = "\r\nPCYCLE TIME: ";
 const char STR_Port_Limit[] PROGMEM = "\r\nPORT LIMIT: ";
+const char STR_Port_CutOff[] PROGMEM = "\r\nPORT CUTOFF: ";
+const char STR_Port_CutOn[] PROGMEM = "\r\nPORT CUTON: ";
 const char STR_VREF[] PROGMEM = "\r\nVREF: ";
 const char STR_VCAL[] PROGMEM = "\r\nVCAL: ";
 const char STR_ICAL[] PROGMEM = "\r\nICAL: ";
@@ -167,6 +180,7 @@ const char STR_Command_SETVCAL[] PROGMEM = "SETVCAL";
 const char STR_Command_SETICAL[] PROGMEM = "SETICAL";
 const char STR_Command_SETNAME[] PROGMEM = "SETNAME";
 const char STR_Command_SETLIMIT[] PROGMEM = "SETLIMIT";
+const char STR_Command_VCTL[] PROGMEM = "VCTL";
 
 // Port to ADC Address look up table
 // PORT 1,2,3,4,5,6,7,8
@@ -181,6 +195,7 @@ const uint8_t ADC_Inputs[INPUT_CNT] = \
 
 // State Variables
 ps_set PORT_STATE[PORT_CNT];
+pbs_set PORT_BOOT_STATE[PORT_CNT];
 char DATA_IN[DATA_BUFF_LEN];
 uint8_t DATA_IN_POS = 0;
 
@@ -223,8 +238,10 @@ USB_ClassInfo_CDC_Device_t VirtualSerial_CDC_Interface = {
 	void (*bootloader)(void) = 0x3800;
 #endif
 
+// USB
 static inline void run_lufa(void);
 
+// SPI
 static inline void SPI_begin(void);
 static inline void SPI_end(void);
 static inline uint8_t SPI_transfer(uint8_t _data);
@@ -232,13 +249,19 @@ static inline void SPI_setBitOrder(uint8_t bitOrder);
 static inline void SPI_setDataMode(uint8_t mode);
 static inline void SPI_setClockDivider(uint8_t rate);
 
+// LED & Port Control
 static inline void LED_CTL(uint8_t led, uint8_t state);
 static inline void PORT_CTL(uint8_t port, uint8_t state);
 static inline void PORT_Set_Ctl(pd_set *pd, uint8_t state);
-static inline uint8_t PORT_Check_Current_Limit(uint8_t port);
 
-static inline uint8_t EEPROM_Read_Port_Default(uint8_t port);
-static inline void EEPROM_Write_Port_Default(uint8_t port, uint8_t portdef);
+// Check Limits
+static inline void Check_Current_Limits(void);
+static inline uint8_t PORT_Check_Current_Limit(uint8_t port);
+static inline void Check_Voltage_Cutoff(void);
+
+// EEPROM Read & Write
+static inline uint8_t EEPROM_Read_Port_Boot_State(uint8_t port);
+static inline void EEPROM_Write_Port_Boot_State(uint8_t port, uint8_t state);
 static inline float EEPROM_Read_REF_V(void);
 static inline void EEPROM_Write_REF_V(float reference);
 static inline float EEPROM_Read_V_CAL(void);
@@ -251,20 +274,27 @@ static inline void EEPROM_Read_Port_Name(int8_t port, char *str);
 static inline void EEPROM_Write_Port_Name(int8_t port, char *str);
 static inline uint8_t EEPROM_Read_Port_Limit(uint8_t port);
 static inline void EEPROM_Write_Port_Limit(uint8_t port, uint8_t limit);
+static inline float EEPROM_Read_Port_CutOff(uint8_t port);
+static inline void EEPROM_Write_Port_CutOff(uint8_t port, uint16_t cutoff);
+static inline float EEPROM_Read_Port_CutOn(uint8_t port);
+static inline void EEPROM_Write_Port_CutOn(uint8_t port, uint16_t cuton);
 static inline void EEPROM_Dump_Vars(void);
 static inline void EEPROM_Reset(void);
 
+// ADC
 static inline float ADC_Read_Port_Current(uint8_t port);
 static inline float ADC_Read_Input_Voltage(void);
 static inline float ADC_Read_Temperature(void);
 static inline float ADC_Read_Raw_Voltage(uint8_t port, uint8_t adc);
 static inline uint16_t ADC_Read_Raw(uint8_t port, uint8_t adc);
 
+// Output
 static inline void printPGMStr(PGM_P s);
 static inline void PRINT_Status(void);
 static inline void PRINT_Status_Prog(void);
 static inline void PRINT_Help(void);
 
+// Input
 static inline void INPUT_Clear(void);
 static inline void INPUT_Parse(void);
 static inline void INPUT_Parse_args(pd_set *pd, char *str);

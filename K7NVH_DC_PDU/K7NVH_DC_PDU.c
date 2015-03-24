@@ -5,7 +5,9 @@
 // Port locking?
 // Watchdog - Problem exists where reset dumps into DFU, and waits there.
 // Up/down arrow keys?
+
 // Voltage based port control. Enable/disable, Voff, Von, delay (5s?), manual control disables voltage control
+// ^ Should be all complete except commands to set voltage thresholds, and delay interval
 
 #include "K7NVH_DC_PDU.h"
 
@@ -60,11 +62,13 @@ int main(void) {
 	DDRC |= (1 << P5EN)|(1 << P6EN)|(1 << P7EN)|(1 << P8EN);
 	DDRD |= (1 << LED1)|(1 << LED2);
 
-	// Enable/Disable ports per their defaults
-	for(uint8_t i = 0; i < PORT_CNT; i++) {
-		PORT_CTL(i, EEPROM_Read_Port_Default(i));
-		run_lufa();
+	// Read in stored port on/off states, and turn them on/off to match
+	for (uint8_t i = 0; i < PORT_CNT; i++) {
+		PORT_BOOT_STATE[i] = EEPROM_Read_Port_Boot_State(i);
+		if (PORT_BOOT_STATE[i] & 0b00000001) { PORT_CTL(i, 1); } else { PORT_CTL(i, 0); } // Enable port if set
+		if (PORT_BOOT_STATE[i] & 0b00000010) { PORT_STATE[i] |= 0b00000100; } // Enable VCTL if set
 	}
+	run_lufa();
 
 	INPUT_Clear();
 
@@ -142,35 +146,10 @@ int main(void) {
 		LED_CTL(0, 0);
 		
 		// Check for above threshold current usage
-		for (uint8_t i = 0; i < 8; i++) {
-			if (PORT_Check_Current_Limit(i)) {
-				// Current is above threshold. Double check a moment later to make sure
-				// we're not just seeing inrush current.
-				_delay_ms(10);
-				if (PORT_Check_Current_Limit(i)) {
-					// Print a warning message.
-					fprintf(&USBSerialStream, "\r\n");
-					printPGMStr(STR_Overload);
-					
-					// Disable the port
-					PORT_CTL(i, 0);
-				
-					// Mark the overload bit for this port
-					PORT_STATE[i] |= 0b00000010;
-					
-					// Turn the RED LED on.
-					LED_CTL(1, 1);
-					
-					INPUT_Clear();
-				}
-			}
-		}
-		// If no ports are listed as overload anymore, disable the RED led.
-		uint8_t error = 0;
-		for (uint8_t i = 0; i < 8; i++) {
-			if ((PORT_STATE[i] & 0x02) > 0) error++;
-		}
-		if (error == 0) LED_CTL(1, 0);
+		Check_Current_Limits();
+		
+		// Timer interval, check voltage control
+		Check_Voltage_Cutoff();
 		
 		// Keep the LUFA USB stuff fed regularly.
 		run_lufa();
@@ -276,7 +255,7 @@ static inline void INPUT_Parse(void) {
 			return;
 		}
 	}
-	// SETDEV - Set the port default state
+	// SETDEF - Set the port default state
 	if (strncasecmp_P(DATA_IN, STR_Command_SETDEF, 6) == 0) {
 		char *str = DATA_IN + 6;
 		uint8_t state = 255;
@@ -290,7 +269,48 @@ static inline void INPUT_Parse(void) {
 			INPUT_Parse_args(&pd, (state ? DATA_IN+8 : DATA_IN+9));
 			for (uint8_t i = 0; i < PORT_CNT; i++) {
 				if (pd & (1 << i)) {
-					EEPROM_Write_Port_Default(i, state);
+					if (state == 1) {
+						PORT_BOOT_STATE[i] |= 0b00000001;
+					}else{
+						PORT_BOOT_STATE[i] &= 0b11111110;
+					}
+					EEPROM_Write_Port_Boot_State(i, PORT_BOOT_STATE[i]);
+				
+					printPGMStr(STR_Port_Default);
+					fprintf(&USBSerialStream, "%i ", i+1);
+					printPGMStr(state ? STR_Enabled : STR_Disabled);
+				}
+			}
+			return;
+		}
+	}
+	// VCTL - Enable/Disable Voltage Control
+	if (strncasecmp_P(DATA_IN, STR_Command_VCTL, 4) == 0) {
+		char *str = DATA_IN + 4;
+		uint8_t setting = 255;
+		if (strncasecmp_P(str, PSTR("ON"), 2) == 0) {
+			setting = 1;
+		}
+		if (strncasecmp_P(str, PSTR("OFF"), 3) == 0) {
+			setting = 0;
+		}
+		if (setting <= 1) {
+			INPUT_Parse_args(&pd, (setting ? DATA_IN+6 : DATA_IN+7));
+			for (uint8_t i = 0; i < PORT_CNT; i++) {
+				if (pd & (1 << i)) {
+					if (setting == 1) {
+						PORT_BOOT_STATE[i] |= 0b00000010;
+						PORT_STATE[i] |= 0b00000100;
+					}else{
+						PORT_BOOT_STATE[i] &= 0b11111101;
+						PORT_STATE[i] &= 0b11111011;
+					}
+					EEPROM_Write_Port_Boot_State(i, PORT_BOOT_STATE[i]);
+					
+					fprintf(&USBSerialStream, "\r\n");
+					printPGMStr(STR_Command_VCTL);
+					fprintf(&USBSerialStream, " %i ", i+1);
+					printPGMStr(setting ? STR_Enabled : STR_Disabled);
 				}
 			}
 			return;
@@ -427,10 +447,13 @@ static inline void PRINT_Status(void) {
 		fprintf(&USBSerialStream, "%.2fA ", current);
 		// Power reading
 		printPGMStr(PSTR("Power: "));
-		fprintf(&USBSerialStream, "%.1fW ", (voltage * current));
+		fprintf(&USBSerialStream, "%.1fW", (voltage * current));
 		
 		// Overload?
 		if (PORT_STATE[i] & 0b00000010) { printPGMStr(STR_Overload); }
+		
+		// Voltage Control?
+		if (PORT_STATE[i] & 0b00000100) { printPGMStr(STR_VCTL); }
 	}
 	
 	// Aux Inputs
@@ -463,13 +486,14 @@ static inline void PRINT_Status_Prog(void){
 		EEPROM_Read_Port_Name(i, temp_name);
 		
 		uint8_t port_state = (PORT_STATE[i] & 0b00000001);
-		uint8_t port_overload = (PORT_STATE[i] &0b00000010) >> 1;
+		uint8_t port_overload = (PORT_STATE[i] & 0b00000010) >> 1;
+		uint8_t port_vctl = (PORT_STATE[i] & 0b00000100) >> 2;
 		
 		float current = ADC_Read_Port_Current(i);
 		float power = current * voltage;
 		
-		fprintf(&USBSerialStream, "\r\n%i,%s,%i,%.2f,%.1f,%i", i+1, temp_name, port_state, \
-			current, power, port_overload);
+		fprintf(&USBSerialStream, "\r\n%i,%s,%i,%.2f,%.1f,%i,%i", i+1, temp_name, port_state, \
+			current, power, port_overload, port_vctl);
 	}
 }
 
@@ -493,6 +517,10 @@ static inline void PORT_Set_Ctl(pd_set *pd, uint8_t state) {
 	for (uint8_t i = 0; i < PORT_CNT; i++) {
 		if (*pd & (1 << i)) {
 			PORT_CTL(i, state);
+			
+			// If a port is controlled manually, make sure that voltage control gets disabled
+			// Does not disable voltage control settings stored in EEPROM
+			PORT_STATE[i] &= 0b11111011;
 		}
 	}
 }
@@ -534,6 +562,41 @@ static inline void LED_CTL(uint8_t led, uint8_t state) {
 	}
 }
 
+// Check all ports for exceeding current limits, disable the port, and set the RED led.
+static inline void Check_Current_Limits(void){
+	// Check for above threshold current usage
+	for (uint8_t i = 0; i < 8; i++) {
+		if (PORT_Check_Current_Limit(i)) {
+			// Current is above threshold. Double check a moment later to make sure
+			// we're not just seeing inrush current.
+			_delay_ms(10);
+			if (PORT_Check_Current_Limit(i)) {
+				// Print a warning message.
+				fprintf(&USBSerialStream, "\r\n");
+				printPGMStr(STR_Overload);
+				
+				// Disable the port
+				PORT_CTL(i, 0);
+			
+				// Mark the overload bit for this port
+				PORT_STATE[i] |= 0b00000010;
+				
+				// Turn the RED LED on.
+				LED_CTL(1, 1);
+				
+				INPUT_Clear();
+			}
+		}
+	}
+		
+	// If no ports are listed as overload anymore, disable the RED led.
+	uint8_t error = 0;
+	for (uint8_t i = 0; i < PORT_CNT; i++) {
+		if ((PORT_STATE[i] & 0x02) > 0) error++;
+	}
+	if (error == 0) LED_CTL(1, 0);
+}
+
 // Checks a port against the stored current limit. Returns 0 if below limits, and 1 if
 // the port has exceeded current limits.
 static inline uint8_t PORT_Check_Current_Limit(uint8_t port){
@@ -544,22 +607,45 @@ static inline uint8_t PORT_Check_Current_Limit(uint8_t port){
 	return 0;
 }
 
+// Checks the disable voltage setting for each port and disables the port if it has fallen 
+// below the cutoff threshold, and re-enables if it is above the cuton threshold.
+static inline void Check_Voltage_Cutoff(void){
+	float voltage = ADC_Read_Input_Voltage();
+	
+	for (uint8_t i = 0; i < PORT_CNT; i++) {
+		if ((PORT_STATE[i] & 0b00000100) > 0) {
+			// Check for low voltage cutoffs
+			if (voltage < EEPROM_Read_Port_CutOff(i) && (PORT_STATE[i] & 0b00000001)) {
+				// Disable the port
+				PORT_CTL(i, 0);
+				
+				INPUT_Clear();
+			}
+			
+			// Check for high voltage cutons
+			if (voltage > EEPROM_Read_Port_CutOn(i) && !(PORT_STATE[i] & 0b000000001)) {
+				// Enable the port
+				PORT_CTL(i, 1);
+				
+				INPUT_Clear();
+			}
+		}
+	}
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~ EEPROM Functions
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 
 // Read the default port state setting
-static inline uint8_t EEPROM_Read_Port_Default(uint8_t port) {
-	uint8_t portdef = eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_PORT_DEFAULTS + port));
-	if (portdef > 1) portdef = 1;
-	return portdef;
+static inline uint8_t EEPROM_Read_Port_Boot_State(uint8_t port) {
+	uint8_t state = eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_PORT_DEFAULTS + port));
+	if (state == 255) state = 1;
+	return state;
 }
 // Write the default port state setting
-static inline void EEPROM_Write_Port_Default(uint8_t port, uint8_t portdef) {
-	eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_PORT_DEFAULTS + port), portdef);
-	printPGMStr(STR_Port_Default);
-	fprintf(&USBSerialStream, "%i ", port+1);
-	printPGMStr(portdef ? STR_Enabled : STR_Disabled);
+static inline void EEPROM_Write_Port_Boot_State(uint8_t port, uint8_t state) {
+	eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_PORT_DEFAULTS + port), state);
 }
 
 // Read the stored reference voltage from EEPROM
@@ -645,14 +731,36 @@ static inline void EEPROM_Write_Port_Name(int8_t port, char *str) {
 // Stored as amps*10 so 50==5.0A
 static inline uint8_t EEPROM_Read_Port_Limit(uint8_t port) {
 	uint8_t limit = eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_LIMIT+(port)));
-	if (limit > LIMIT_MAX) {
-		return LIMIT_MAX;
-	}
+	if (limit > LIMIT_MAX) { limit = LIMIT_MAX; }
 	return limit;
 }
 // Stored as amps*10 so 50==5.0A
 static inline void EEPROM_Write_Port_Limit(uint8_t port, uint8_t limit) {
 	eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_LIMIT+(port)), limit);
+}
+
+// Reads the cutoff voltage from EEPROM. Voltage = value/100
+static inline float EEPROM_Read_Port_CutOff(uint8_t port) {
+	float cutoff = eeprom_read_word((uint16_t*)(EEPROM_OFFSET_V_CUTOFF+(port))) / 100.0;
+	if (cutoff > VMAX) { cutoff = 0; }
+	return cutoff;
+}
+
+// Stored as (int)cutoff*100
+static inline void EEPROM_Write_Port_CutOff(uint8_t port, uint16_t cutoff) {
+	eeprom_update_word((uint16_t*)(EEPROM_OFFSET_V_CUTOFF+(port)), (int)(cutoff * 100));
+}
+
+// Reads the cuton voltage from EEPROM. Voltage = value/100
+static inline float EEPROM_Read_Port_CutOn(uint8_t port) {
+	float cuton = eeprom_read_word((uint16_t*)(EEPROM_OFFSET_V_CUTON+(port))) / 100.0;
+	if (cuton > VMAX) { cuton = VMAX; }
+	return cuton;
+}
+
+// Stored as (int)cuton*100
+static inline void EEPROM_Write_Port_CutOn(uint8_t port, uint16_t cuton) {
+	eeprom_update_word((uint16_t*)(EEPROM_OFFSET_V_CUTON+(port)), (int)(cuton * 100));
 }
 
 // Dump all EEPROM variables
@@ -662,6 +770,7 @@ static inline void EEPROM_Dump_Vars(void) {
 	for (uint8_t i = 0; i < PORT_CNT; i++) {
 		fprintf(&USBSerialStream, "%i ", eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_PORT_DEFAULTS + i)));
 	}
+	
 	// Read REF_V
 	printPGMStr(STR_VREF);
 	fprintf(&USBSerialStream, "%.2f:%.2f", eeprom_read_float((float*)(EEPROM_OFFSET_REF_V)), EEPROM_Read_REF_V());
@@ -673,14 +782,28 @@ static inline void EEPROM_Dump_Vars(void) {
 	for (uint8_t i = 0; i < PORT_CNT; i++) {
 		fprintf(&USBSerialStream, "%i:%.1f ", eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_I_CAL + i)), EEPROM_Read_I_CAL(i));
 	}
+	
 	// Read Port Cycle Time
 	printPGMStr(STR_PCYCLE_Time);
 	fprintf(&USBSerialStream, "%iS", eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_CYCLE_TIME)));
+	
 	// Read Port Limits
 	printPGMStr(STR_Port_Limit);
 	for (uint8_t i = 0; i < PORT_CNT; i++) {
 		fprintf(&USBSerialStream, "%i:%i ", eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_LIMIT + i)), EEPROM_Read_Port_Limit(i));
 	}
+	
+	// Read Port Cutoffs
+	printPGMStr(STR_Port_CutOff);
+	for (uint8_t i = 0; i < PORT_CNT; i++) {
+		fprintf(&USBSerialStream, "%u:%.1f ", eeprom_read_word((uint16_t*)(EEPROM_OFFSET_V_CUTOFF + i)), EEPROM_Read_Port_CutOff(i));
+	}
+	// Read Port Cutons
+	printPGMStr(STR_Port_CutOn);
+	for (uint8_t i = 0; i < PORT_CNT; i++) {
+		fprintf(&USBSerialStream, "%u:%.1f ", eeprom_read_word((uint16_t*)(EEPROM_OFFSET_V_CUTON + i)), EEPROM_Read_Port_CutOn(i));
+	}
+	
 	// Read Port Names
 	printPGMStr(PSTR("\r\nPNAMES: "));
 	for (uint8_t i = 0; i < PORT_CNT; i++) {
