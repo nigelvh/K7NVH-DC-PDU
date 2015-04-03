@@ -5,7 +5,7 @@ The K7NVH DC PDU is a device designed to provide remote power control of DC devi
 
 A variety of features are available, including user defined overcurrent protection, automatic port control based on voltage thresholds, human readable and parseable status displays, port cycling with user defined delay, user defined port state on PDU startup, user defined names for each port and the PDU itself, and options for calibrating the voltage and current sense functions.
 
-Power can be supplied to the device via either USB or a standard barrel jack at 5V, and the device draws approximately 20mA. Please ensure that you supply ONLY regulated 5V. Supplying more than 5V will damage the PDU.
+Power can be supplied to the device via either USB or a standard barrel jack at 5V, and the device draws approximately 20mA. Please ensure that you supply ONLY regulated 5V. Supplying more than 5V will damage the PDU. You can choose how the device is powered (USB or Barrel Jack) via the solder jumper on the bottom of the board.
 
 The device is available to the host system as a USB serial device, which when accessed accepts a number of basic ASCII commands which can be entered manually, or via a user created script to automate control actions.
 
