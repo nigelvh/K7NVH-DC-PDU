@@ -165,10 +165,10 @@ The 'SETICAL' command is used only during calibration of the PDU. Measuring the 
 
 For example, to set the calibration on port 1 to 11.0X, the following is valid 'SETICAL' syntax. `SETICAL 1 110`
 
-### EEPROMDUMP
-The 'EEPROMDUMP' command is useful for debugging PDU stored state. It will output a variety of values stored in various locations in EEPROM memory, and may not be formatted for easy understanding.
+### DEBUG
+The 'DEBUG' command is useful for debugging PDU state. It will output a variety of values, and may not be formatted for easy understanding.
 
-In the cases of unset or default values, the 'EEPROMDUMP' command may return a number of unprintable characters to your terminal. This is expected behavior.
+In the cases of unset or default values, the 'DEBUG' command may return a number of unprintable characters to your terminal. This is expected behavior.
 
 ## Drivers
 The PDU board is automatically recognized as a USB serial device under OSX and Linux, however, windows requires a driver to associate the device with the built in USB serial device drivers.

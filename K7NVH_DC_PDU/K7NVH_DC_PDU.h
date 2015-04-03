@@ -32,7 +32,8 @@
 #define ENABLECOLORS
 
 #define SOFTWARE_STR "\r\nK7NVH DC PDU"
-#define SOFTWARE_VERS "1.1"
+#define HARDWARE_VERS "1.1"
+#define SOFTWARE_VERS "1.0"
 #define PORT_CNT    8
 #define INPUT_CNT	8
 #define DATA_BUFF_LEN    32
@@ -172,7 +173,7 @@ const char STR_ICAL[] PROGMEM = "\r\nICAL: ";
 const char STR_Command_HELP[] PROGMEM = "HELP";
 const char STR_Command_STATUS[] PROGMEM = "STATUS";
 const char STR_Command_PSTATUS[] PROGMEM = "PSTATUS";
-const char STR_Command_EEPROMDUMP[] PROGMEM = "EEPROMDUMP";
+const char STR_Command_DEBUG[] PROGMEM = "DEBUG";
 const char STR_Command_PON[] PROGMEM = "PON";
 const char STR_Command_POFF[] PROGMEM = "POFF";
 const char STR_Command_PCYCLE[] PROGMEM = "PCYCLE";
@@ -282,8 +283,10 @@ static inline float EEPROM_Read_Port_CutOff(uint8_t port);
 static inline void EEPROM_Write_Port_CutOff(uint8_t port, uint16_t cutoff);
 static inline float EEPROM_Read_Port_CutOn(uint8_t port);
 static inline void EEPROM_Write_Port_CutOn(uint8_t port, uint16_t cuton);
-static inline void EEPROM_Dump_Vars(void);
 static inline void EEPROM_Reset(void);
+
+// DEBUG
+static inline void DEBUG_Dump(void);
 
 // ADC
 static inline float ADC_Read_Port_Current(uint8_t port);

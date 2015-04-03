@@ -50,7 +50,7 @@ int main(void) {
 
 	// Print startup message
 	printPGMStr(PSTR(SOFTWARE_STR));
-	fprintf(&USBSerialStream, " V%s", SOFTWARE_VERS);
+	fprintf(&USBSerialStream, " V%s,%s", HARDWARE_VERS, SOFTWARE_VERS);
 	run_lufa();
 
 	// Start up SPI
@@ -212,9 +212,9 @@ static inline void INPUT_Parse(void) {
 		PRINT_Status_Prog();
 		return;
 	}
-	// EEPROMDUMP - Print a report of the variables stored in EEPROM
-	if (strncasecmp_P(DATA_IN, STR_Command_EEPROMDUMP, 10) == 0) {
-		EEPROM_Dump_Vars();
+	// DEBUG - Print a report of debugging information, including EEPROM variables
+	if (strncasecmp_P(DATA_IN, STR_Command_DEBUG, 10) == 0) {
+		DEBUG_Dump();
 		return;
 	}
 	// PON - Turn on a port or list of ports
@@ -817,8 +817,22 @@ static inline void EEPROM_Write_Port_CutOn(uint8_t port, uint16_t cuton) {
 	eeprom_update_word((uint16_t*)(EEPROM_OFFSET_V_CUTON+(port*2)), cuton);
 }
 
-// Dump all EEPROM variables
-static inline void EEPROM_Dump_Vars(void) {
+// Reset all EEPROM values to 255
+static inline void EEPROM_Reset(void) {
+	for (uint16_t i = 0; i < 256; i++) {
+		eeprom_update_byte((uint8_t*)(i), 255);
+	}
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// ~~ Debugging Functions
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// Dump debugging data
+static inline void DEBUG_Dump(void) {
+	// Print hardware and software versions
+	fprintf(&USBSerialStream, "\r\nV%s,%s", HARDWARE_VERS, SOFTWARE_VERS);
+
 	// Read port defaults
 	printPGMStr(STR_Port_Default);
 	for (uint8_t i = 0; i < PORT_CNT; i++) {
@@ -860,18 +874,11 @@ static inline void EEPROM_Dump_Vars(void) {
 	
 	// Read Port Names
 	printPGMStr(PSTR("\r\nPNAMES: "));
-	for (uint8_t i = 0; i < PORT_CNT; i++) {
-		for (uint8_t j = 0; j < 16; j++) {
+	for (int8_t i = -1; i < PORT_CNT; i++) {
+		for (int8_t j = 0; j < 16; j++) {
 			fputc(eeprom_read_byte((uint8_t*)(EEPROM_OFFSET_P0NAME+(i*16)+j)), &USBSerialStream);
 		}
 		fputc(' ', &USBSerialStream);
-	}
-}
-
-// Reset all EEPROM values to 255
-static inline void EEPROM_Reset(void) {
-	for (uint16_t i = 0; i < 256; i++) {
-		eeprom_update_byte((uint8_t*)(i), 255);
 	}
 }
 
