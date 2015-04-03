@@ -6,13 +6,12 @@
 // Watchdog - Problem exists where reset dumps into DFU, and waits there.
 // Up/down arrow keys?
 
-// Voltage based port control. Enable/disable, Voff, Von, delay (5s?), manual control disables voltage control
-// ^ Should be all complete except commands to set voltage thresholds, and delay interval
-
 #include "K7NVH_DC_PDU.h"
 
 ISR(WDT_vect){
 	timer++;
+	
+	if ((timer) % VCTL_DELAY == 0){ check_voltage = 1; }
 }
 
 // Main program entry point.
@@ -149,7 +148,10 @@ int main(void) {
 		Check_Current_Limits();
 		
 		// Timer interval, check voltage control
-		Check_Voltage_Cutoff();
+		if (check_voltage) {
+			Check_Voltage_Cutoff();
+			check_voltage = 0;
+		}
 		
 		// Keep the LUFA USB stuff fed regularly.
 		run_lufa();
@@ -315,6 +317,41 @@ static inline void INPUT_Parse(void) {
 			}
 			return;
 		}
+	}
+	// SETVCTL - Set ON/OFF Voltages for Voltage Control
+	if (strncasecmp_P(DATA_IN, STR_Command_SETVCTL, 7) == 0) {
+		char *str = DATA_IN + 7;
+		int8_t portid;
+		uint8_t setting = 255;
+		if (strncasecmp_P(str, PSTR("ON"), 2) == 0) {
+			setting = 1;
+			str += 2;
+		}
+		if (strncasecmp_P(str, PSTR("OFF"), 3) == 0) {
+			setting = 0;
+			str += 3;
+		}
+		if (setting <= 1) {
+			while (*str == ' ' || *str == '\t') str++;
+			if (*str >= '1' && *str <= '8') {
+				portid = *str - '1';
+				str++;
+				
+				uint16_t temp_set_voltage = atoi(str);
+				if ((float)(temp_set_voltage/100) <= VMAX){
+					if (setting == 1) {
+						EEPROM_Write_Port_CutOn(portid, temp_set_voltage);
+					} else {
+						EEPROM_Write_Port_CutOff(portid, temp_set_voltage);
+					}
+					printPGMStr(STR_Port_VCTL);
+					fprintf(&USBSerialStream, "%.2fV", (float)temp_set_voltage/100);
+					return;
+				}
+			}
+		}
+		// EEPROM_Write_Port_CutOff(uint8_t port, uint16_t cutoff)
+		// EEPROM_Write_Port_CutOn(uint8_t port, uint16_t cuton)
 	}
 	// SETNAME - Set the name for a given port.
 	if (strncasecmp_P(DATA_IN, STR_Command_SETNAME, 7) == 0) {
@@ -581,6 +618,10 @@ static inline void Check_Current_Limits(void){
 				// Mark the overload bit for this port
 				PORT_STATE[i] |= 0b00000010;
 				
+				// If a port overloads, make sure that voltage control gets disabled
+				// Does not disable voltage control settings stored in EEPROM
+				PORT_STATE[i] &= 0b11111011;
+				
 				// Turn the RED LED on.
 				LED_CTL(1, 1);
 				
@@ -614,20 +655,33 @@ static inline void Check_Voltage_Cutoff(void){
 	
 	for (uint8_t i = 0; i < PORT_CNT; i++) {
 		if ((PORT_STATE[i] & 0b00000100) > 0) {
-			// Check for low voltage cutoffs
-			if (voltage < EEPROM_Read_Port_CutOff(i) && (PORT_STATE[i] & 0b00000001)) {
-				// Disable the port
-				PORT_CTL(i, 0);
-				
-				INPUT_Clear();
-			}
-			
-			// Check for high voltage cutons
-			if (voltage > EEPROM_Read_Port_CutOn(i) && !(PORT_STATE[i] & 0b000000001)) {
-				// Enable the port
-				PORT_CTL(i, 1);
-				
-				INPUT_Clear();
+			// 
+			if ((voltage < EEPROM_Read_Port_CutOff(i) && (PORT_STATE[i] & 0b00000001)) || (voltage > EEPROM_Read_Port_CutOn(i) && !(PORT_STATE[i] & 0b00000001))) {
+				// Check if this is the second time through, if so, disable the port.
+				// If it's the first time through, set the VCTL changing bit
+				if ((PORT_STATE[i] & 0b00001000) > 0) {
+					// If it's below the cutoff, turn the port off
+					// If it's above the cuton, turn the port on
+					if (voltage < EEPROM_Read_Port_CutOff(i)) {
+						// Disable the port
+						PORT_CTL(i, 0);
+					}
+					if (voltage > EEPROM_Read_Port_CutOn(i)) {
+						// Enable the port
+						PORT_CTL(i, 1);
+					}
+					
+					// Clear the VCTL changing bit
+					PORT_STATE[i] &= 0b11110111;
+					
+					INPUT_Clear();
+				} else {
+					PORT_STATE[i] |= 0b00001000;
+				}
+			// If voltage is above thresholds, reset any VCTL changing bit that was applied.
+			} else {
+				// Clear the VCTL changing bit
+				PORT_STATE[i] &= 0b11110111;
 			}
 		}
 	}
@@ -741,26 +795,26 @@ static inline void EEPROM_Write_Port_Limit(uint8_t port, uint8_t limit) {
 
 // Reads the cutoff voltage from EEPROM. Voltage = value/100
 static inline float EEPROM_Read_Port_CutOff(uint8_t port) {
-	float cutoff = eeprom_read_word((uint16_t*)(EEPROM_OFFSET_V_CUTOFF+(port))) / 100.0;
+	float cutoff = eeprom_read_word((uint16_t*)(EEPROM_OFFSET_V_CUTOFF+(port*2))) / 100.0;
 	if (cutoff > VMAX) { cutoff = 0; }
 	return cutoff;
 }
 
 // Stored as (int)cutoff*100
 static inline void EEPROM_Write_Port_CutOff(uint8_t port, uint16_t cutoff) {
-	eeprom_update_word((uint16_t*)(EEPROM_OFFSET_V_CUTOFF+(port)), (int)(cutoff * 100));
+	eeprom_update_word((uint16_t*)(EEPROM_OFFSET_V_CUTOFF+(port*2)), cutoff);
 }
 
 // Reads the cuton voltage from EEPROM. Voltage = value/100
 static inline float EEPROM_Read_Port_CutOn(uint8_t port) {
-	float cuton = eeprom_read_word((uint16_t*)(EEPROM_OFFSET_V_CUTON+(port))) / 100.0;
+	float cuton = eeprom_read_word((uint16_t*)(EEPROM_OFFSET_V_CUTON+(port*2))) / 100.0;
 	if (cuton > VMAX) { cuton = VMAX; }
 	return cuton;
 }
 
 // Stored as (int)cuton*100
 static inline void EEPROM_Write_Port_CutOn(uint8_t port, uint16_t cuton) {
-	eeprom_update_word((uint16_t*)(EEPROM_OFFSET_V_CUTON+(port)), (int)(cuton * 100));
+	eeprom_update_word((uint16_t*)(EEPROM_OFFSET_V_CUTON+(port*2)), cuton);
 }
 
 // Dump all EEPROM variables
@@ -796,12 +850,12 @@ static inline void EEPROM_Dump_Vars(void) {
 	// Read Port Cutoffs
 	printPGMStr(STR_Port_CutOff);
 	for (uint8_t i = 0; i < PORT_CNT; i++) {
-		fprintf(&USBSerialStream, "%u:%.1f ", eeprom_read_word((uint16_t*)(EEPROM_OFFSET_V_CUTOFF + i)), EEPROM_Read_Port_CutOff(i));
+		fprintf(&USBSerialStream, "%u:%.1f ", eeprom_read_word((uint16_t*)(EEPROM_OFFSET_V_CUTOFF + i*2)), EEPROM_Read_Port_CutOff(i));
 	}
 	// Read Port Cutons
 	printPGMStr(STR_Port_CutOn);
 	for (uint8_t i = 0; i < PORT_CNT; i++) {
-		fprintf(&USBSerialStream, "%u:%.1f ", eeprom_read_word((uint16_t*)(EEPROM_OFFSET_V_CUTON + i)), EEPROM_Read_Port_CutOn(i));
+		fprintf(&USBSerialStream, "%u:%.1f ", eeprom_read_word((uint16_t*)(EEPROM_OFFSET_V_CUTON + i*2)), EEPROM_Read_Port_CutOn(i));
 	}
 	
 	// Read Port Names

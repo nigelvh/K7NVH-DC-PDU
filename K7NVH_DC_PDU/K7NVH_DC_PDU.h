@@ -87,7 +87,7 @@
 #define VMAX 40
 
 // Timing
-#define VCTL_DELAY 5 // Seconds
+#define VCTL_DELAY 20 // Ticks. ~5s
 
 // EEPROM Offsets
 #define EEPROM_OFFSET_PORT_DEFAULTS 0 // 8 bytes at offset 0
@@ -115,12 +115,14 @@
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // Timer
-unsigned long timer = 0;
+volatile unsigned long timer = 0;
+// Schedule
+volatile uint8_t check_voltage = 0;
 
 typedef uint8_t pd_set; // Port Descriptor Set - bitmap of ports
 
 // Port State Set - bitmap of port state
-// (NUL,NUL,NUL,NUL,NUL,VCTL Enabled?,Overload,Enabled?)
+// (NUL,NUL,NUL,NUL,VCTL Changing,VCTL Enabled?,Overload,Enabled?)
 typedef uint8_t ps_set;
 // Port Boot State Set - bitmap of port boot state
 // (NUL,NUL,NUL,NUL,NUL,NUL,VCTL Enabled?,Enabled?)
@@ -161,6 +163,7 @@ const char STR_PCYCLE_Time[] PROGMEM = "\r\nPCYCLE TIME: ";
 const char STR_Port_Limit[] PROGMEM = "\r\nPORT LIMIT: ";
 const char STR_Port_CutOff[] PROGMEM = "\r\nPORT CUTOFF: ";
 const char STR_Port_CutOn[] PROGMEM = "\r\nPORT CUTON: ";
+const char STR_Port_VCTL[] PROGMEM = "\r\nPORT VCTL: ";
 const char STR_VREF[] PROGMEM = "\r\nVREF: ";
 const char STR_VCAL[] PROGMEM = "\r\nVCAL: ";
 const char STR_ICAL[] PROGMEM = "\r\nICAL: ";
@@ -181,6 +184,7 @@ const char STR_Command_SETICAL[] PROGMEM = "SETICAL";
 const char STR_Command_SETNAME[] PROGMEM = "SETNAME";
 const char STR_Command_SETLIMIT[] PROGMEM = "SETLIMIT";
 const char STR_Command_VCTL[] PROGMEM = "VCTL";
+const char STR_Command_SETVCTL[] PROGMEM = "SETVCTL";
 
 // Port to ADC Address look up table
 // PORT 1,2,3,4,5,6,7,8

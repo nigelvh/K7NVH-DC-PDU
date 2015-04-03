@@ -14,7 +14,7 @@ This is the source code to be compiled by AVR-GCC for installation on the device
 The 'HELP' command will print a short message referencing the project page containing documentation.
 
 ### STATUS
-The 'STATUS' command is designed to give an overview of the running state of each port on the PDU. The port numbers, any configured custom port names, and port state (ENABLED/DISABLED) will be displayed. Input voltage, board temperature, and per port current and power values will be shown. Voltages sensed on the auxiliary inputs will also be displayed. Note that unconnected auxiliary inputs may float and show voltages on unconnected pins.
+The 'STATUS' command is designed to give an overview of the running state of each port on the PDU. The port numbers, any configured custom port names, and port state (ENABLED/DISABLED) will be displayed. Input voltage, board temperature, and per port current and power values will be shown. Voltages sensed on the auxiliary inputs will also be displayed. Note that unconnected auxiliary inputs may float and show voltages on unconnected pins. Messages that ports have been disabled due to overload, or are under automatic voltage control are displayed if applicable.
 
 ```plain
 > STATUS
@@ -37,7 +37,7 @@ The 'PSTATUS' command is designed to give an overview of the running state of th
 K7NVH DC PDU,Version Number,Device Name
 Input Voltage,Board Temperature
 AIN1,AIN2,AIN3,AIN4,AIN5,AIN6
-Port Number,Port Name,Binary Enabled/Disabled Flag,Port Current,Port Power,Binary Overload Flag
+Port Number,Port Name,Binary Enabled/Disabled Flag,Port Current,Port Power,Binary Overload Flag,Automatic Voltage Control Flag
 (The above line is repeated for each port)
 ```
 An example output might look like the following.
@@ -46,58 +46,58 @@ An example output might look like the following.
 K7NVH DC PDU,1.1,
 2.15,23
 0.02,0.04,0.03,0.01,0.01,0.03
-0,,1,0.00,0.0,0
-1,,1,0.00,0.0,0
-2,,1,0.00,0.0,0
-3,,1,0.00,0.0,0
-4,,1,0.00,0.0,0
-5,,1,0.00,0.0,0
-6,,1,0.00,0.0,0
-7,Port 8,1,0.03,0.1,0
+0,,1,0.00,0.0,0,0
+1,,1,0.00,0.0,0,0
+2,,1,0.00,0.0,0,0
+3,,1,0.00,0.0,0,0
+4,,1,0.00,0.0,0,0
+5,,1,0.00,0.0,0,0
+6,,1,0.00,0.0,0,0
+7,Port 8,1,0.03,0.1,0,0
 ```
 
 ### PON
 The 'PON' command is used to enable one or more ports on the PDU.
 
-The PDU supports somewhat arbitrary specification of which ports to enable. For example, all of the following are valid 'PON' syntaxes. 'A' can also be substituted for a port number to enable all ports.
-`PON 1` `PON1` `PON 1 2 3 4` `PON1234` `PON 1234` `PON A`
+The PDU supports enabling multiple ports at a time. For example, all of the following are valid 'PON' syntaxes. 'A' can also be substituted for a port number to enable all ports.
+`PON 1` `PON 1 2 3 4` `PON A`
 
 ### POFF
 The 'POFF' command is used to disable one or more ports on the PDU.
 
-The PDU supports somewhat arbitrary specification of which ports to disable. For example, all of the following are valid 'POFF' syntaxes. 'A' can also be substituted for a port number to disable all ports.
-`POFF 1` `POFF1` `POFF 1 2 3 4` `POFF1234` `POFF 1234` `POFF A`
+The PDU supports disabling multiple ports at a time. For example, all of the following are valid 'POFF' syntaxes. 'A' can also be substituted for a port number to disable all ports.
+`POFF 1` `POFF 1 2 3 4` `POFF A`
 
 ### PCYCLE
 The 'PCYCLE' command is used to disable one or more ports on the PDU for a period of time set by the 'SETCYCLE' command, after which, the port is enabled again.
 
 If 'PCYCLE' is issued on a port that is already disabled, the port will remain disabled for the period of time set by the 'SETCYCLE' command, and will be enabled with any other ports specified.
 
-The PDU supports somewhat arbitrary specification of which ports to cycle. For example, all of the following are valid 'PCYCLE' syntaxes. 'A' can also be substituted for a port number to cycle all ports. `PCYCLE 1` `PCYCLE1` `PCYCLE 1 2 3 4` `PCYCLE1234` `PCYCLE 1234` `PCYCLE A`
+The PDU supports cycling multiple ports at a time. 'A' can also be substituted for a port number to cycle all ports. The following are valid PCYCLE syntaxes. `PCYCLE 1` `PCYCLE 1 2 3 4` `PCYCLE A`
 
 ### SETCYCLE
 The 'SETCYCLE' command is used to set the period of time in seconds that ports will be disabled on the PDU during a 'PCYCLE' command. This command has no immediate impact on any ports.
 
 Valid range for the 'SETCYCLE' command is 0-30 seconds. 0 seconds being no delay between disabling and re-enabling a port, and 30 seconds being the maximum delay allowable.
 
-For example, to set a 5 second delay, the following are valid 'SETCYCLE' syntaxes. `SETCYCLE5` `SETCYCLE 5`
+For example, to set a 5 second delay, the following is valid 'SETCYCLE' syntax. `SETCYCLE 5`
 
 ### SETDEFON
 The 'SETDEFON' command is used to store the desired default state of a given port at PDU boot time to enabled. The PDU will default to all ports being enabled at boot, but you may leave ports disabled at boot with the 'SETDEFOFF' command, or set them back to enabled via 'SETDEFON'.
 
-The PDU supports somewhat arbitrary specification of which ports to change default state for. For example, all of the following are valid 'SETDEFON' syntaxes. 'A' can also be substituted for a port number to change all ports.`SETDEFON 1` `SETDEFON1` `SETDEFON 1 2 3 4` `SETDEFON1234` `SETDEFON 1234` `SETDEFON A`
+The PDU supports setting multiple ports at a time to be enabled by default. 'A' can also be substituted for a port number to change all ports. `SETDEFON 1` `SETDEFON 1 2 3 4` `SETDEFON A`
 
 ### SETDEFOFF
 The 'SETDEFOFF' command is used to store the desired default state of a given port at PDU boot time to disabled. The PDU will default to all ports being enabled at boot, but you may leave ports disabled at boot with the 'SETDEFOFF' command, or set them back to enabled via 'SETDEFON'.
 
-The PDU supports somewhat arbitrary specification of which ports to change default state for. For example, all of the following are valid 'SETDEFOFF' syntaxes. 'A' can also be substituted for a port number to change all ports. `SETDEFOFF 1` `SETDEFOFF1` `SETDEFOFF 1 2 3 4` `SETDEFOFF1234` `SETDEFOFF 1234` `SETDEFOFF A`
+The PDU supports setting multiple ports at a time to be disabled by default. 'A' can also be substituted for a port number to change all ports. `SETDEFOFF 1` `SETDEFOFF 1 2 3 4` `SETDEFOFF A`
 
 ### SETNAME
 The 'SETNAME' command is used to store a user defined "helpful" name for each port on the PDU. By default the custom names are blank, but they may be set to a user defined string of up to 15 characters in length. Strings longer than 15 characters will be truncated.
 
 The user defined name will be displayed alongside the port number in the output from the 'STATUS' command.
 
-The PDU supports setting only one port name at a time, but the syntax is flexible like with other multi-port commands. The following are examples of valid 'SETNAME' syntax, setting Port 1's name to "Testing". `SETNAME1Testing` `SETNAME1 Testing` `SETNAME 1Testing` `SETNAME 1 Testing`
+The PDU supports setting only one port name at a time. The following is an example of valid 'SETNAME' syntax, setting Port 1's name to "Testing". `SETNAME 1 Testing`
 
 The 'SETNAME' command can also be used to give the PDU device an overall name by using 'P' in place of the port number. The device name will be displayed as part of the input prompt as a visual aid to ensure users are interacting with the intended device. The following is an example of valid 'SETNAME' syntax to set the device name. `SETNAME P PDU-Test`
 
@@ -108,9 +108,41 @@ The 'SETLIMIT' command is used to store a user defined overload current limit fo
 
 During normal operation the PDU will continuously check current flow on each port, and compare against the stored limits. If a port is found to exceed the stored limit for greater than 10ms (milliseconds), the port will be disabled, a warning message will be printed, and a overload flag will be displayed in the 'STATUS' output.
 
+If a port has been disabled due to current overload, the port can be re-enabled with a manual 'PON' command.
+
 'SETLIMIT' is set in units of mA (milliamps), and accepts values from 0 to 10000 (0 to 10 amps). However, the provided input will be truncated to tenths of amps. For example, a value of 1150, will be truncated to 1.1A.
 
-The PDU supports setting only one port limit at a time, but the syntax is flexible like with other multi-port commands. The following are examples of valid 'SETLIMIT' syntax, setting Port 1's limit to 1.5A. `SETLIMIT11500` `SETLIMIT1 1500` `SETLIMIT 11500` `SETLIMIT 1 1500`
+The PDU supports setting only one port limit at a time. The following is an example of setting Port 1's current limit to 1.5A. `SETLIMIT 1 1500`
+
+### VCTLON
+The 'VCTLON' command is used to enable the PDU to control a given port automatically based on the sensed input voltage. This setting is persistent across reboots of the PDU device. Automatic voltage control of a given port is disabled until manually enabled again, or the PDU is rebooted, in the case of any manual action controlling a port, or an overload condition disables a port.
+
+The voltage thresholds for enabling and disabling a port are set with the 'SETVCTLON' and 'SETVCTLOFF' commands.
+
+Input voltage is polled approximately every 5 seconds, and ports will be enabled/disabled after two consecutive polling cycles have shown voltages beyond the configured thresholds.
+
+Automatic voltage control can be very helpful for battery powered environments, to disable devices if available battery power runs too low. As each port can have unique settings, the user can configure staggered shutdown or startup for equipment as batteries are drained, and subsequently recharged.
+
+The PDU supports setting multiple ports at a time for automatic control. The following are examples of valid syntax for enabling automatic control. `VCTLON 1` `VCTLON 1 2 3 4`
+
+### VCTLOFF
+The 'VCTLOFF' command is used to disable the PDU from controlling a given port automatically based on the sensed input voltage. This setting is persistent across reboots of the PDU device.
+
+The PDU supports setting multiple ports at a time for disabled automatic control. The following are examples of valid syntax for disabling automatic control. `VCTLOFF 1` `VCTLOFF 1 2 3 4`
+
+### SETVCTLON
+The 'SETVCTLON' command is used to set the voltage, at which a port should be enabled, when configured for automatic control. By default this value is set at 40 volts, the limit of the PDU device, effectively disabling automatic port control.
+
+'SETVCTLON' is set in units of hundredths of volts, and accepts values from 0 to 4000 (0 to 40 volts).
+
+The PDU supports setting only one port enable threshold at a time. The following is an example of setting the enable threshold of Port 1 to 10 volts. `SETVCTLON 1 1000`
+
+### SETVCTLOFF
+The 'SETVCTLOFF' command is used to set the voltage, at which a port should be disabled, when configured for automatic control. By default this value is set at 0 volts, effectively disabling automatic port control.
+
+'SETVCTLOFF' is set in units of hundredths of volts, and accepts values from 0 to 4000 (0 to 40 volts).
+
+The PDU supports setting only one port disable threshold at a time. The following is an example of setting the disable threshold of Port 1 to 10 volts. `SETVCTLON 1 1000`
 
 ### SETVREF
 The 'SETVREF' command is used only during calibration of the PDU. Measuring the voltage reference regulator with an accurate voltage meter, the calibration of voltage and current measurements can be updated.
@@ -134,7 +166,7 @@ The 'SETICAL' command is used only during calibration of the PDU. Measuring the 
 For example, to set the calibration on port 1 to 11.0X, the following is valid 'SETICAL' syntax. `SETICAL 1 110`
 
 ### EEPROMDUMP
-The 'EEPROMDUMP' command is used only for debugging PDU stored state. It will output a variety of values stored in various locations in EEPROM memory, and may not be formatted for easy understanding.
+The 'EEPROMDUMP' command is useful for debugging PDU stored state. It will output a variety of values stored in various locations in EEPROM memory, and may not be formatted for easy understanding.
 
 In the cases of unset or default values, the 'EEPROMDUMP' command may return a number of unprintable characters to your terminal. This is expected behavior.
 
