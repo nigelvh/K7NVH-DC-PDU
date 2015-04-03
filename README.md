@@ -1,13 +1,15 @@
 K7NVH DC PDU
 =======
 
-The K7NVH DC PDU is a device designed to provide remote power control of DC devices in an affordable, low power, and flexible package. Each port is capable of handling 3+ amps, and can also measure the current flowing through each port.
+The K7NVH DC PDU is a device designed to provide remote power control of DC devices in an affordable, low power, and flexible package. Each port is rated to handle 3 amps, and can also measure the current and power flowing through each port.
 
-Power can be supplied to the device via either USB or a standard barrel jack at 5V.
+A variety of features are available, including user defined overcurrent protection, automatic port control based on voltage thresholds, human readable and parseable status displays, port cycling with user defined delay, user defined port state on PDU startup, user defined names for each port and the PDU itself, and options for calibrating the voltage and current sense functions.
+
+Power can be supplied to the device via either USB or a standard barrel jack at 5V, and the device draws approximately 20mA. Please ensure that you supply ONLY regulated 5V. Supplying more than 5V will damage the PDU.
 
 The device is available to the host system as a USB serial device, which when accessed accepts a number of basic ASCII commands which can be entered manually, or via a user created script to automate control actions.
 
-This is the source code to be compiled by AVR-GCC for installation on the device itself. The device should already have this installed, and is only needed if you want to make modifications.
+This repository contains the source code to be compiled with AVR-GCC, and uploaded to the device via ATMEL's FLIP programmer. There are also resources like CAD files for a case for the device, as well as example resources for configuring a PDU connected computer for providing PDU status data via SNMP.
 
 ## Supported Commands
 ### HELP
