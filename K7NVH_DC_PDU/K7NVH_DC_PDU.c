@@ -436,9 +436,9 @@ static inline void INPUT_Parse(void) {
 		
 			uint16_t temp_i_cal = atoi(str);
 			if (temp_i_cal >= ICAL_MIN && temp_i_cal <= ICAL_MAX){
-				EEPROM_Write_I_CAL(portid, (float)(temp_i_cal / 10));
+				EEPROM_Write_I_CAL(portid, (float)(temp_i_cal / 10.0));
 				printPGMStr(STR_ICAL);
-				fprintf(&USBSerialStream, "%.1f", (float)(temp_i_cal / 10));
+				fprintf(&USBSerialStream, "%.1f", (float)(temp_i_cal / 10.0));
 				return;
 			}
 		}
@@ -723,7 +723,7 @@ static inline float EEPROM_Read_V_CAL(void) {
 }
 // Write the reference voltage to EEPROM
 static inline void EEPROM_Write_V_CAL(float div) {
-	eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_V_CAL), (int)(div * 10));
+	eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_V_CAL), (int)(div * 10.0));
 }
 
 // Read the stored port current calibration
@@ -734,7 +734,7 @@ static inline float EEPROM_Read_I_CAL(uint8_t port) {
 }
 // Write the port current calibration to EEPROM
 static inline void EEPROM_Write_I_CAL(uint8_t port, float cal) {
-	eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_I_CAL + port), (int)(cal * 10));
+	eeprom_update_byte((uint8_t*)(EEPROM_OFFSET_I_CAL + port), (int)(cal * 10.0));
 }
 
 // Read PCYCLE_TIME from EEPROM
