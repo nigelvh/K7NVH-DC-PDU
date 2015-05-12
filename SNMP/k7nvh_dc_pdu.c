@@ -178,8 +178,8 @@ int main(int argc, char *argv[]) {
 				fprintf(stdout, "%c", buf[0]);
 			}
 		}else{
-			// Sleep for 20ms (non-blocking wait, lowers CPU time dramatically)
-			usleep(20*1000);
+			// Sleep for 100ms (non-blocking wait, lowers CPU time dramatically)
+			usleep(100*1000);
 		}
 	}
 	
