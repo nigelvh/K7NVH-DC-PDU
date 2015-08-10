@@ -12,6 +12,7 @@ ISR(WDT_vect){
 	timer++;
 	
 	if ((timer) % VCTL_DELAY == 0){ check_voltage = 1; }
+	if ((timer) % ICTL_DELAY == 0){ check_current = 1; }
 }
 
 // Main program entry point.
@@ -145,7 +146,10 @@ int main(void) {
 		LED_CTL(0, 0);
 		
 		// Check for above threshold current usage
-		Check_Current_Limits();
+		if (check_current) {
+			Check_Current_Limits();
+			check_current = 0;
+		}
 		
 		// Timer interval, check voltage control
 		if (check_voltage) {
@@ -604,29 +608,24 @@ static inline void Check_Current_Limits(void){
 	// Check for above threshold current usage
 	for (uint8_t i = 0; i < 8; i++) {
 		if (PORT_Check_Current_Limit(i)) {
-			// Current is above threshold. Double check a moment later to make sure
-			// we're not just seeing inrush current.
-			_delay_ms(10);
-			if (PORT_Check_Current_Limit(i)) {
-				// Print a warning message.
-				fprintf(&USBSerialStream, "\r\n");
-				printPGMStr(STR_Overload);
+			// Current is above threshold. Print a warning message.
+			fprintf(&USBSerialStream, "\r\n");
+			printPGMStr(STR_Overload);
 				
-				// Disable the port
-				PORT_CTL(i, 0);
+			// Disable the port
+			PORT_CTL(i, 0);
 			
-				// Mark the overload bit for this port
-				PORT_STATE[i] |= 0b00000010;
+			// Mark the overload bit for this port
+			PORT_STATE[i] |= 0b00000010;
 				
-				// If a port overloads, make sure that voltage control gets disabled
-				// Does not disable voltage control settings stored in EEPROM
-				PORT_STATE[i] &= 0b11111011;
+			// If a port overloads, make sure that voltage control gets disabled
+			// Does not disable voltage control settings stored in EEPROM
+			PORT_STATE[i] &= 0b11111011;
 				
-				// Turn the RED LED on.
-				LED_CTL(1, 1);
+			// Turn the RED LED on.
+			LED_CTL(1, 1);
 				
-				INPUT_Clear();
-			}
+			INPUT_Clear();
 		}
 	}
 		
@@ -910,23 +909,32 @@ static inline float ADC_Read_Raw_Voltage(uint8_t port, uint8_t adc) {
 
 // Return raw counts from the ADC
 static inline uint16_t ADC_Read_Raw(uint8_t port, uint8_t adc) {
-	uint8_t temp1,temp2;
+	uint8_t temp1,temp2,count;
+	uint16_t average = 0;
 	
-	if(adc == 0){
-		PORTB &= ~(1 << SPI_SS_PORTS);
-		SPI_transfer(0x01); // Start bit
-		temp1 = SPI_transfer(ADC_Ports[port]); // Single ended, input number, clocking in 4 bits
-		temp2 = SPI_transfer(0x00); // Clocking in 8 bits.
-		PORTB |= (1 << SPI_SS_PORTS);
-	}else{
-		PORTD &= ~(1 << SPI_SS_INPUTS);
-		SPI_transfer(0x01); // Start bit
-		temp1 = SPI_transfer(ADC_Inputs[port]); // Single ended, input number, clocking in 4 bits
-		temp2 = SPI_transfer(0x00); // Clocking in 8 bits.
-		PORTD |= (1 << SPI_SS_INPUTS);
+	// Take ADC_AVG_POINTS samples
+	for (count = 0; count < ADC_AVG_POINTS; count++) {
+		// Activate the proper ADC based on the request
+		if(adc == 0){
+			PORTB &= ~(1 << SPI_SS_PORTS);
+			SPI_transfer(0x01); // Start bit
+			temp1 = SPI_transfer(ADC_Ports[port]); // Single ended, input number, clocking in 4 bits
+			temp2 = SPI_transfer(0x00); // Clocking in 8 bits.
+			PORTB |= (1 << SPI_SS_PORTS);
+		}else{
+			PORTD &= ~(1 << SPI_SS_INPUTS);
+			SPI_transfer(0x01); // Start bit
+			temp1 = SPI_transfer(ADC_Inputs[port]); // Single ended, input number, clocking in 4 bits
+			temp2 = SPI_transfer(0x00); // Clocking in 8 bits.
+			PORTD |= (1 << SPI_SS_INPUTS);
+		}
+		
+		// Add each sample to our average variable
+		average += (uint16_t)((temp1 & 0b00000011) << 8) | temp2;
 	}
-
-	return (uint16_t)((temp1 & 0b00000011) << 8) | temp2;
+	
+	// Divide by the number of samples, and return the end average
+	return (average / ADC_AVG_POINTS);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

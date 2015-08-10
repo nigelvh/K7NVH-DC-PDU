@@ -33,10 +33,11 @@
 
 #define SOFTWARE_STR "\r\nK7NVH DC PDU"
 #define HARDWARE_VERS "1.1"
-#define SOFTWARE_VERS "1.0"
+#define SOFTWARE_VERS "1.1"
 #define PORT_CNT    8
 #define INPUT_CNT	8
 #define DATA_BUFF_LEN    32
+#define ADC_AVG_POINTS   5
 
 #define SPI_CLOCK_DIV4 0x00
 #define SPI_CLOCK_DIV16 0x01
@@ -89,6 +90,7 @@
 
 // Timing
 #define VCTL_DELAY 20 // Ticks. ~5s
+#define ICTL_DELAY 1 // Ticks. ~0.25s
 
 // EEPROM Offsets
 #define EEPROM_OFFSET_PORT_DEFAULTS 0 // 8 bytes at offset 0
@@ -119,6 +121,7 @@
 volatile unsigned long timer = 0;
 // Schedule
 volatile uint8_t check_voltage = 0;
+volatile uint8_t check_current = 0;
 
 typedef uint8_t pd_set; // Port Descriptor Set - bitmap of ports
 
